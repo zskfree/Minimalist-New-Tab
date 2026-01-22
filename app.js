@@ -1424,17 +1424,27 @@ const SettingsManager = {
         row.className = 'custom-bg-row';
         row.dataset.id = d.id;
         row.innerHTML = `
-                    <input class="link-input" type="text" value="${d.name}" placeholder="${t('customName')}">
-                    <input class="link-input" type="text" value="${d.url}" placeholder="${t('customUrl')}">
-                    <label class="custom-random"><input type="checkbox" ${d.random ? 'checked' : ''}>${t('customRandom')}</label>
-                    <button class="btn-icon" data-action="remove-row">×</button>
-                `;
+                        <div class="custom-preview" style="background-image:url('${escapeHtml(d.url || '')}')"></div>
+                        <div class="custom-inputs">
+                            <input class="link-input" type="text" value="${d.name || ''}" placeholder="${t('customName')}">
+                            <input class="link-input" type="text" value="${d.url || ''}" placeholder="${t('customUrl')}">
+                        </div>
+                        <div class="custom-controls">
+                            <label class="custom-random"><input type="checkbox" ${d.random ? 'checked' : ''}>${t('customRandom')}</label>
+                            <div class="control-buttons">
+                                <button class="btn btn-secondary use-bg-btn" data-id="${d.id}">使用</button>
+                                <button class="btn-icon" data-action="remove-row">×</button>
+                            </div>
+                        </div>
+                    `;
         wrap.appendChild(row);
     },
 
     confirmRemoveRow: function (btn) {
         if (confirm(t('confirmRemoveRow'))) {
-            btn.parentElement.remove();
+            // Remove the whole custom-bg-row (button may be nested inside controls)
+            const row = btn.closest('.custom-bg-row') || btn.parentElement;
+            if (row) row.remove();
             showActionToast(t('rowRemoved'), 'success');
         }
     },
@@ -2011,9 +2021,18 @@ function bindEvents() {
                     SettingsManager.setBgType(type);
                     // ensure the preview is visible immediately
                 } else {
-                    // Fallback: directly preview the URL
-                    State.tempBgValue = State.customBgSources.find(s => s.id === id)?.url || '';
-                    $('bg-layer').src = State.tempBgValue;
+                    // Fallback: try to preview the URL directly from saved state or the editor row (unsaved)
+                    let url = State.customBgSources.find(s => s.id === id)?.url;
+                    if (!url) {
+                        const row = useBtn.closest('.custom-bg-row');
+                        const inputs = row ? row.querySelectorAll('input[type="text"]') : null;
+                        url = inputs && inputs[1] ? inputs[1].value.trim() : url || '';
+                    }
+                    State.tempBgValue = url || '';
+                    if (State.tempBgValue) {
+                        setBgStatus(t('bgLoading'), 'loading');
+                        $('bg-layer').src = State.tempBgValue;
+                    }
                 }
                 return;
             }
