@@ -210,6 +210,9 @@ const getDomain = (url) => { try { return new URL(url).hostname; } catch (e) { r
 const FAILED_FAVICONS = new Set();
 const ICON_TIMEOUTS = new WeakMap();
 const ICON_LOAD_TIMEOUT = 1200;
+const FAVICON_CACHE_KEY = 'favicon_cache_v1';
+const FAVICON_FAIL_KEY = 'favicon_fail_v1';
+const FAVICON_FAIL_TTL = 12 * 60 * 60 * 1000;
 const FAVICON_PROVIDERS = {
     direct: { id: 'direct', build: (domain) => `https://${domain}/favicon.ico` },
     baidu: { id: 'baidu', build: (domain) => `https://favicon.baidusearch.com/favicon?domain=${domain}` },
@@ -220,13 +223,69 @@ const FAVICON_PROVIDERS = {
 };
 const getFaviconCache = () => {
     try {
-        return JSON.parse(localStorage.getItem('favicon_cache_v1') || '{}');
+        return JSON.parse(localStorage.getItem(FAVICON_CACHE_KEY) || '{}');
     } catch (e) {
         return {};
     }
 };
 const setFaviconCache = (cache) => {
-    localStorage.setItem('favicon_cache_v1', JSON.stringify(cache));
+    localStorage.setItem(FAVICON_CACHE_KEY, JSON.stringify(cache));
+};
+const getFaviconFailCache = () => {
+    try {
+        return JSON.parse(localStorage.getItem(FAVICON_FAIL_KEY) || '{}');
+    } catch (e) {
+        return {};
+    }
+};
+const setFaviconFailCache = (cache) => {
+    localStorage.setItem(FAVICON_FAIL_KEY, JSON.stringify(cache));
+};
+const pruneFaviconFailCache = (cache) => {
+    const now = Date.now();
+    let changed = false;
+    Object.keys(cache).forEach((domain) => {
+        const entries = cache[domain];
+        if (!entries || typeof entries !== 'object') {
+            delete cache[domain];
+            changed = true;
+            return;
+        }
+        Object.keys(entries).forEach((url) => {
+            if (!entries[url] || now - entries[url] > FAVICON_FAIL_TTL) {
+                delete entries[url];
+                changed = true;
+            }
+        });
+        if (Object.keys(entries).length === 0) {
+            delete cache[domain];
+            changed = true;
+        }
+    });
+    if (changed) setFaviconFailCache(cache);
+    return cache;
+};
+const shouldSkipFavicon = (domain, url) => {
+    if (!domain || !url) return false;
+    const cache = pruneFaviconFailCache(getFaviconFailCache());
+    const entries = cache[domain];
+    if (!entries) return false;
+    return !!entries[url];
+};
+const recordFaviconFailure = (domain, url) => {
+    if (!domain || !url) return;
+    const cache = getFaviconFailCache();
+    cache[domain] = cache[domain] || {};
+    cache[domain][url] = Date.now();
+    setFaviconFailCache(cache);
+};
+const clearFaviconFailure = (domain, url) => {
+    if (!domain || !url) return;
+    const cache = getFaviconFailCache();
+    if (!cache[domain] || !cache[domain][url]) return;
+    delete cache[domain][url];
+    if (Object.keys(cache[domain]).length === 0) delete cache[domain];
+    setFaviconFailCache(cache);
 };
 const clearIconTimeout = (img) => {
     const t = ICON_TIMEOUTS.get(img);
@@ -276,7 +335,7 @@ const isChinaEnv = () => {
     return tz === 'Asia/Shanghai' || tz === 'Asia/Chongqing' || tz === 'Asia/Harbin' || tz === 'Asia/Beijing' || langHit;
 };
 const getFaviconProviders = () => {
-    const base = [FAVICON_PROVIDERS.direct];
+    const base = [FAVICON_PROVIDERS.google, FAVICON_PROVIDERS.direct];
     if (isChinaEnv()) {
         return base.concat([
             FAVICON_PROVIDERS.baidu,
@@ -285,7 +344,6 @@ const getFaviconProviders = () => {
         ]);
     }
     return base.concat([
-        FAVICON_PROVIDERS.google,
         FAVICON_PROVIDERS.yandex
     ]);
 };
@@ -293,11 +351,23 @@ const getFaviconCandidates = (domain, customIcon) => {
     const candidates = [];
     if (customIcon) candidates.push(customIcon);
     if (!domain) return candidates;
+    if (domain === 'chatgpt.com' || domain.endsWith('.chatgpt.com') || domain === 'openai.com' || domain.endsWith('.openai.com')) {
+        const special = [
+            'https://chatgpt.com/favicon.ico',
+            'https://chat.openai.com/favicon.ico',
+            'https://openai.com/favicon.ico',
+            'https://www.google.com/s2/favicons?domain=chatgpt.com&sz=128',
+            'https://www.google.com/s2/favicons?domain=openai.com&sz=128'
+        ];
+        special.forEach((url) => {
+            if (!shouldSkipFavicon(domain, url)) candidates.push(url);
+        });
+    }
     const cache = getFaviconCache();
-    if (cache[domain]) candidates.push(cache[domain]);
+    if (cache[domain] && !shouldSkipFavicon(domain, cache[domain])) candidates.push(cache[domain]);
     getFaviconProviders().forEach((p) => {
         const url = p.build(domain);
-        if (url) candidates.push(url);
+        if (url && !shouldSkipFavicon(domain, url)) candidates.push(url);
     });
     return candidates;
 };
@@ -1157,7 +1227,10 @@ window.checkIcon = function (img, url, title) {
     }
     img.dataset.state = "loaded";
     clearIconTimeout(img);
-    cacheFavicon(getDomain(url), img.currentSrc || img.src);
+    const domain = getDomain(url);
+    const src = img.currentSrc || img.src;
+    cacheFavicon(domain, src);
+    clearFaviconFailure(domain, src);
 };
 window.handleIconError = function (img, url, title) {
     if (img.dataset.state === "failed") return;
@@ -1171,6 +1244,9 @@ window.handleIconError = function (img, url, title) {
     })();
     const step = parseInt(img.dataset.step || "0") + 1;
     img.dataset.step = step;
+
+    const failedUrl = candidates[step - 1];
+    if (failedUrl) recordFaviconFailure(domain, failedUrl);
 
     if (candidates[step]) {
         img.src = candidates[step];
@@ -1970,9 +2046,11 @@ function bindEvents() {
         let startWidth = 0;
         resizer.addEventListener('mousedown', (e) => {
             e.preventDefault();
-            startWidth = parseInt(sidebarEl.style.width, 10) || startWidth;
             startX = e.clientX;
-            startWidth = sidebar.getBoundingClientRect().width;
+            const computed = sidebarEl.getBoundingClientRect().width;
+            startWidth = Number.isFinite(computed) && computed > 0
+                ? computed
+                : (parseInt(sidebarEl.style.width, 10) || startWidth || sidebarEl.offsetWidth);
             document.body.classList.add('resizing');
             document.addEventListener('mousemove', onMove);
             document.addEventListener('mouseup', onUp);
