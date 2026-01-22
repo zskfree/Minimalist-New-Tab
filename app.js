@@ -1969,7 +1969,14 @@ function bindEvents() {
     }
 
     const manageBtn = $('btnManageBookmarks');
+    const setManageBtnState = (enabled) => {
+        if (!manageBtn) return;
+        manageBtn.disabled = !enabled;
+        manageBtn.classList.toggle('is-disabled', !enabled);
+        manageBtn.setAttribute('aria-disabled', String(!enabled));
+    };
     if (manageBtn) {
+        setManageBtnState(isExtensionContext() && !!(chrome && chrome.tabs));
         manageBtn.addEventListener('click', () => {
             if (!isExtensionContext() || !chrome.tabs) {
                 showActionToast(t('manageUnavailable'), 'error');
