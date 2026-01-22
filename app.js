@@ -599,7 +599,7 @@ const UIManager = {
                 $('bookmarkGrid').innerHTML = `<div style="grid-column:1/-1;text-align:center;opacity:0.6;padding:60px;">${t('welcome')}</div>`;
                 $('breadcrumb').innerHTML = `<div class="breadcrumb-item">${t('home')}</div>`;
             } else {
-                this.enterFolder('root');
+                this.enterFolder(this.getDefaultFolderId());
             }
         });
     },
@@ -737,6 +737,48 @@ const UIManager = {
         bindIconEvents(container);
     },
 
+    getDefaultFolderId: function () {
+        const roots = (State.bookmarks || []).filter(n => n && n.type === 'folder');
+        if (!roots.length) return 'root';
+        const normalize = (s) => String(s || '').trim().toLowerCase();
+        const preferredTitles = new Set([
+            'bookmarks bar',
+            'bookmark bar',
+            'bookmarks toolbar',
+            'favorites bar',
+            '书签栏',
+            '收藏夹栏'
+        ].map(normalize));
+        const exact = roots.find(f => preferredTitles.has(normalize(f.title)));
+        if (exact) return exact.id;
+        if (roots.length === 1) return roots[0].id;
+        let best = roots[0];
+        let max = (best.children || []).length;
+        roots.forEach(f => {
+            const len = (f.children || []).length;
+            if (len > max) {
+                max = len;
+                best = f;
+            }
+        });
+        return best?.id || 'root';
+    },
+
+    getFolderPath: function (fid) {
+        const walk = (nodes, path = []) => {
+            for (const n of nodes || []) {
+                if (!n || n.type !== 'folder') continue;
+                if (n.id === fid) return [...path, n];
+                if (n.children && n.children.length) {
+                    const res = walk(n.children, [...path, n]);
+                    if (res) return res;
+                }
+            }
+            return null;
+        };
+        return walk(State.bookmarks) || [];
+    },
+
     enterFolder: function (fid) {
         State.currentFolderId = fid;
         let items = State.bookmarks;
@@ -744,15 +786,18 @@ const UIManager = {
         if (fid === 'root') {
             State.breadcrumbPath = [{ id: 'root', title: t('home') }];
         } else {
-            const find = (nodes, id) => {
-                for (const n of nodes) {
-                    if (n.id === id) return n;
-                    if (n.children) { const f = find(n.children, id); if (f) return f; }
-                }
-                return null;
-            };
-            const folder = find(State.bookmarks, fid);
-            items = folder ? (folder.children || []) : [];
+            const path = this.getFolderPath(fid);
+            const folder = path.length ? path[path.length - 1] : null;
+            if (folder) {
+                items = folder.children || [];
+                State.breadcrumbPath = [{ id: 'root', title: t('home') }].concat(
+                    path.map(n => ({ id: n.id, title: n.title }))
+                );
+            } else {
+                State.currentFolderId = 'root';
+                items = State.bookmarks;
+                State.breadcrumbPath = [{ id: 'root', title: t('home') }];
+            }
         }
         this.renderBreadcrumb();
         this.renderGrid(items);
@@ -1198,7 +1243,7 @@ const Storage = {
                 applyLanguage();
                 UIManager.updateSearchPlaceholder();
                 if (State.bookmarks.length) {
-                    UIManager.enterFolder('root');
+                    UIManager.enterFolder(UIManager.getDefaultFolderId());
                 } else {
                     $('bookmarkGrid').innerHTML = `<div style="grid-column:1/-1;text-align:center;opacity:0.6;padding:60px;">${t('welcome')}</div>`;
                     $('breadcrumb').innerHTML = `<div class="breadcrumb-item">${t('home')}</div>`;
@@ -1486,7 +1531,7 @@ const SettingsManager = {
         }).filter(s => s.name && s.url);
 
         // Import
-        if (State.pendingImportData) { State.bookmarks = State.pendingImportData; UIManager.enterFolder('root'); }
+        if (State.pendingImportData) { State.bookmarks = State.pendingImportData; UIManager.enterFolder(UIManager.getDefaultFolderId()); }
 
         Storage.save();
         location.reload();
