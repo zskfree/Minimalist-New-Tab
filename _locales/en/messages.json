@@ -1,0 +1,18 @@
+{
+    "name": {
+        "message": "Minimalist New Tab",
+        "description": "Extension name"
+    },
+    "description": {
+        "message": "Clean, fast new tab with bookmarks, quick links, search suggestions and customizable wallpapers.",
+        "description": "Short description"
+    },
+    "short_name": {
+        "message": "New Tab",
+        "description": "Short name"
+    },
+    "short_description": {
+        "message": "A lightweight, privacy-friendly new tab.",
+        "description": "Short description"
+    }
+}
