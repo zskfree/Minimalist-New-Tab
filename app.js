@@ -5,6 +5,7 @@ if (typeof isExtensionContext === 'undefined') {
 /** Module: Constants & Config */
 const Config = {
     BING_API: "https://bing.biturl.top/?resolution=1920&format=image&index=0&mkt=zh-CN",
+    FALLBACK_BG: './assets/defult.png',
     ENGINES: {
         google: { name: "Google", url: "https://www.google.com/search?q=", suggest: "https://suggestqueries.google.com/complete/search?client=chrome&q={q}&callback={cb}" },
         bing: { name: "Bing", url: "https://www.bing.com/search?q=", suggest: "https://api.bing.com/qsonhs.aspx?type=cb&q={q}&cb={cb}" },
@@ -87,6 +88,7 @@ const I18N = {
         lunarUnsupported: '不支持阴历显示',
         bgUrl: '链接',
         bgLocal: '本地',
+        useDefaultBg: '使用默认壁纸',
         langZh: '中文',
         langEn: 'English',
         style: {
@@ -188,11 +190,11 @@ const State = {
     quickLinks: [],
     currentFolderId: 'root',
     breadcrumbPath: [],
-    styles: { iconSize: 60, innerScale: 75, fontSize: 13, gridGap: 24, bgBlur: 0, bgOverlay: 20, sidebarWidth: 360 },
-    bgConfig: { type: 'bing', value: Config.BING_API },
+    styles: { iconSize: 60, innerScale: 75, fontSize: 13, gridGap: 24, bgBlur: 0, bgOverlay: 20, sidebarWidth: 800 },
+    bgConfig: { type: 'custom_zhimg-pica', value: 'https://pica.zhimg.com/v2-564f2c587f65e208a130242b34338872_1440w.jpg' },
     currentEngine: 'google',
     language: 'zh',
-    customBgSources: [],
+    customBgSources: [{ id: 'zhimg-pica', name: 'Zhimg Pica', url: 'https://pica.zhimg.com/v2-564f2c587f65e208a130242b34338872_1440w.jpg', random: false }],
     tempBgValue: null,
     pendingImportData: null,
     isSearchMode: false,
@@ -451,7 +453,14 @@ const withCacheBuster = (url, param) => {
 };
 
 const getBgSourcesMap = () => {
-    const map = { ...Config.BG_SOURCES };
+    // Ensure the fallback (local bundled image) appears first in the list
+    const map = {};
+    if (Config.FALLBACK_BG) {
+        map['fallback'] = { label: t('bgLocal') + ' (默认)', url: Config.FALLBACK_BG, random: false, isFallback: true };
+    }
+    // Add built-in presets after fallback
+    Object.keys(Config.BG_SOURCES).forEach(k => map[k] = Config.BG_SOURCES[k]);
+    // Add user custom sources last
     State.customBgSources.forEach(src => {
         map[`custom_${src.id}`] = {
             label: src.name,
@@ -675,6 +684,11 @@ const UIManager = {
             const last = getLastGoodBg();
             if (last && img.src !== last) {
                 img.src = last;
+                return;
+            }
+            // Try bundled local fallback first (user-provided `assets/defult.png`), then Bing API
+            if (Config.FALLBACK_BG) {
+                img.src = Config.FALLBACK_BG;
                 return;
             }
             if (c.type !== 'bing') img.src = Config.BING_API;
@@ -1267,7 +1281,7 @@ const SettingsManager = {
         $('settingsSidebar').classList[action]('open');
         $('sidebarBackdrop').classList[action]('open');
         $('mainWrapper').classList[open ? 'add' : 'remove']('sidebar-open');
-        if (open) this.render();
+        if (open) { this.render(); UIManager.applySidebarWidth(); }
         else { Storage.load().then(() => { applyLanguage(); UIManager.applyStyles(); UIManager.applyBackground(false, { silent: true }); UIManager.renderDock(); UIManager.updateSearchPlaceholder(); }); }
     },
 
@@ -1333,10 +1347,18 @@ const SettingsManager = {
             row.className = 'custom-bg-row';
             row.dataset.id = s.id;
             row.innerHTML = `
-                        <input class="link-input" type="text" value="${s.name || ''}" placeholder="${t('customName')}">
-                        <input class="link-input" type="text" value="${s.url || ''}" placeholder="${t('customUrl')}">
-                        <label class="custom-random"><input type="checkbox" ${s.random ? 'checked' : ''}>${t('customRandom')}</label>
-                        <button class="btn-icon" data-action="remove-row">×</button>
+                        <div class="custom-preview" style="background-image:url('${escapeHtml(s.url || '')}')"></div>
+                        <div class="custom-inputs">
+                            <input class="link-input" type="text" value="${s.name || ''}" placeholder="${t('customName')}">
+                            <input class="link-input" type="text" value="${s.url || ''}" placeholder="${t('customUrl')}">
+                        </div>
+                        <div class="custom-controls">
+                            <label class="custom-random"><input type="checkbox" ${s.random ? 'checked' : ''}>${t('customRandom')}</label>
+                            <div class="control-buttons">
+                                <button class="btn btn-secondary use-bg-btn" data-id="${s.id}">使用</button>
+                                <button class="btn-icon" data-action="remove-row">×</button>
+                            </div>
+                        </div>
                     `;
             wrap.appendChild(row);
         });
@@ -1975,8 +1997,26 @@ function bindEvents() {
     if (sidebarRoot) {
         sidebarRoot.addEventListener('click', (e) => {
             const removeBtn = e.target.closest('[data-action="remove-row"]');
-            if (!removeBtn) return;
-            SettingsManager.confirmRemoveRow(removeBtn);
+            if (removeBtn) { SettingsManager.confirmRemoveRow(removeBtn); return; }
+
+            const useBtn = e.target.closest('.use-bg-btn');
+            if (useBtn) {
+                const id = useBtn.dataset.id;
+                const type = `custom_${id}`;
+                const radio = document.querySelector(`input[name="bgT"][value="${type}"]`);
+                if (radio) {
+                    radio.checked = true;
+                    // trigger change handler
+                    radio.dispatchEvent(new Event('change', { bubbles: true }));
+                    SettingsManager.setBgType(type);
+                    // ensure the preview is visible immediately
+                } else {
+                    // Fallback: directly preview the URL
+                    State.tempBgValue = State.customBgSources.find(s => s.id === id)?.url || '';
+                    $('bg-layer').src = State.tempBgValue;
+                }
+                return;
+            }
         });
     }
 
@@ -2026,7 +2066,7 @@ function bindEvents() {
     const sidebarEl = $('settingsSidebar');
     if (resizer && sidebarEl) {
         const minW = 260;
-        const maxW = 600;
+        const maxW = 900;
         const onMove = (e) => {
             const dx = startX - e.clientX;
             const next = Math.min(maxW, Math.max(minW, startWidth + dx));

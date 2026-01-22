@@ -748,7 +748,7 @@
             position: fixed;
             top: 0;
             right: 0;
-            width: 360px;
+            width: 760px;
             height: 100%;
             background: linear-gradient(135deg, rgba(30, 30, 34, 0.55), rgba(20, 20, 24, 0.85));
             backdrop-filter: blur(36px) saturate(160%);
@@ -955,6 +955,45 @@
             margin-bottom: 8px;
             font-size: 14px;
             transition: 0.2s;
+            box-sizing: border-box;
+        }
+
+        /* Glass-style file choose button */
+        input[type="file"] {
+            padding: 0;
+            /* remove extra padding so button aligns with inputs */
+        }
+
+        input[type="file"]::file-selector-button,
+        input[type="file"]::-webkit-file-upload-button,
+        input[type="file"]::-moz-file-upload-button {
+            height: 44px;
+            line-height: 1;
+            padding: 8px 14px;
+            margin-right: 8px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+            cursor: pointer;
+            backdrop-filter: blur(12px) saturate(140%);
+            -webkit-backdrop-filter: blur(12px) saturate(140%);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25), inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+            transition: transform 0.12s, background 0.12s;
+            font-weight: 600;
+        }
+
+        input[type="file"]::file-selector-button:hover,
+        input[type="file"]::-webkit-file-upload-button:hover,
+        input[type="file"]::-moz-file-upload-button:hover {
+            transform: translateY(-1px);
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        input[type="file"]::file-selector-button:active,
+        input[type="file"]::-webkit-file-upload-button:active,
+        input[type="file"]::-moz-file-upload-button:active {
+            transform: translateY(0);
         }
 
         .link-input:focus {
@@ -1038,23 +1077,95 @@
 
         .custom-bg-row {
             display: flex;
+            gap: 12px;
+            margin-bottom: 12px;
+            align-items: center;
+            flex-wrap: nowrap;
+        }
+
+        .custom-bg-row .custom-preview {
+            width: 72px;
+            height: 44px;
+            background-size: cover;
+            background-position: center;
+            border-radius: 8px;
+            flex: 0 0 72px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+        }
+
+        .custom-bg-row .custom-inputs {
+            display: flex;
             gap: 8px;
-            margin-bottom: 8px;
+            flex: 1 1 auto;
             align-items: center;
         }
 
-        .custom-bg-row input[type="text"] {
+        .custom-bg-row .custom-inputs input[type="text"] {
             flex: 1;
+            height: 44px;
+            padding: 8px 12px;
+            border-radius: 10px;
+            margin-bottom: 0;
+            /* remove default bottom margin to align vertically */
+            box-sizing: border-box;
+        }
+
+        .custom-bg-row .custom-controls {
+            display: flex;
+            flex-direction: row;
+            /* horizontal layout to align buttons with inputs */
+            gap: 12px;
+            align-items: center;
+            justify-content: flex-end;
+            min-height: 44px;
+            flex: 0 0 auto;
         }
 
         .custom-bg-row .custom-random {
             display: inline-flex;
             align-items: center;
-            gap: 4px;
+            gap: 6px;
             font-size: 12px;
             color: rgba(235, 235, 245, 0.7);
             white-space: nowrap;
             padding: 0 6px;
+            margin-right: 6px;
+        }
+
+        /* Ensure buttons match input box-sizing and baseline */
+        .custom-bg-row .control-buttons .btn,
+        .custom-bg-row .control-buttons .btn-icon {
+            box-sizing: border-box;
+            line-height: 1;
+        }
+
+        .custom-bg-row .control-buttons {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        /* Ensure buttons match input height and have no extra bottom margin */
+        .custom-bg-row .control-buttons .btn,
+        .custom-bg-row .control-buttons .btn-icon {
+            height: 44px;
+            min-height: 44px;
+            padding: 0 14px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            margin-bottom: 0;
+        }
+
+        .custom-bg-row .control-buttons .btn-icon {
+            width: 44px;
+            padding: 0;
+        }
+
+        /* Override global btn-icon margin-bottom when in custom rows */
+        .custom-bg-row .btn-icon {
+            margin-bottom: 0;
         }
 
         .btn-icon {
