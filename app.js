@@ -1555,7 +1555,14 @@ const SettingsManager = {
             }, []);
 
             const root = parse(doc.querySelector('dl'), 'root');
-            let final = []; root.forEach(n => n.type === 'folder' ? final.push(...n.children) : final.push(n));
+            let final = [];
+            root.forEach(n => {
+                if (n.type === 'folder') {
+                    final.push(...(n.children || []));
+                } else {
+                    final.push(n);
+                }
+            });
 
             if (final.length) {
                 State.pendingImportData = final;
