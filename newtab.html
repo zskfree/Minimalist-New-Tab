@@ -422,6 +422,12 @@
             flex-shrink: 0;
         }
 
+        .breadcrumb-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
         .breadcrumb {
             display: flex;
             gap: 6px;
@@ -432,6 +438,43 @@
             backdrop-filter: blur(15px);
             border: 1px solid rgba(255, 255, 255, 0.08);
             font-size: 0.9rem;
+        }
+
+        .sync-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 12px;
+            border-radius: 18px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: rgba(0, 0, 0, 0.28);
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 0.86rem;
+            cursor: pointer;
+            transition: 0.2s ease;
+            backdrop-filter: blur(15px);
+        }
+
+        .sync-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            color: #fff;
+        }
+
+        .sync-btn:active {
+            transform: scale(0.98);
+        }
+
+        .sync-btn svg {
+            width: 14px;
+            height: 14px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2;
+        }
+
+        .sync-btn.is-disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
 
         .breadcrumb-item {
@@ -507,7 +550,8 @@
         .bg-refresh-btn:focus-visible,
         .close-sidebar-btn:focus-visible,
         .btn:focus-visible,
-        .search-input:focus-visible {
+        .search-input:focus-visible,
+        .sync-btn:focus-visible {
             outline: none;
             box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35), 0 10px 30px rgba(0, 0, 0, 0.25);
         }
@@ -1297,7 +1341,27 @@
 
         <div class="workspace-section" id="bookmarks-section">
             <div class="workspace-header">
-                <div class="breadcrumb" id="breadcrumb" role="navigation" aria-label="Breadcrumb"></div>
+                <div class="breadcrumb-bar">
+                    <div class="breadcrumb" id="breadcrumb" role="navigation" aria-label="Breadcrumb"></div>
+                    <button class="sync-btn" id="btnSyncBookmarks" aria-label="Sync bookmarks" type="button">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M3 12a8 8 0 0 1 13.66-5.66" />
+                            <path d="M17 3v6h-6" />
+                            <path d="M21 12a8 8 0 0 1-13.66 5.66" />
+                            <path d="M7 21v-6h6" />
+                        </svg>
+                        <span>同步书签</span>
+                    </button>
+                    <button class="sync-btn" id="btnManageBookmarks" aria-label="Open bookmark manager" type="button">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M4 6h16" />
+                            <path d="M4 10h10" />
+                            <path d="M4 14h16" />
+                            <path d="M4 18h10" />
+                        </svg>
+                        <span>管理书签</span>
+                    </button>
+                </div>
             </div>
             <div class="scroll-area">
                 <div class="grid" id="bookmarkGrid" role="list"></div>

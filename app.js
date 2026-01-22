@@ -56,6 +56,8 @@ const I18N = {
         btnCancel: '取消',
         btnSave: '保存配置',
         btnRefreshBg: '更换壁纸',
+        btnSyncBookmarks: '同步书签',
+        btnManageBookmarks: '管理书签',
         searchPlaceholder: '{engine} 搜索... ("/" 搜书签)',
         welcome: '👋 欢迎！<br>请点击右上角 ⚙️ 导入书签',
         home: '🏠 首页',
@@ -86,6 +88,11 @@ const I18N = {
         bgRandomSelected: '随机壁纸已更新',
         imageTooLarge: '图片需 < 3MB',
         lunarUnsupported: '不支持阴历显示',
+        syncLoading: '正在同步书签…',
+        syncSuccess: '✅ 书签已同步',
+        syncFailed: '❌ 同步失败',
+        syncUnavailable: '❌ 仅扩展模式可同步',
+        manageUnavailable: '❌ 仅扩展模式可打开书签管理',
         bgUrl: '链接',
         bgLocal: '本地',
         useDefaultBg: '使用默认壁纸',
@@ -125,6 +132,8 @@ const I18N = {
         btnCancel: 'Cancel',
         btnSave: 'Save',
         btnRefreshBg: 'Change Wallpaper',
+        btnSyncBookmarks: 'Sync Bookmarks',
+        btnManageBookmarks: 'Manage Bookmarks',
         searchPlaceholder: 'Search {engine}... ("/" bookmarks)',
         welcome: '👋 Welcome!<br>Click ⚙️ in the top-right to import bookmarks',
         home: '🏠 Home',
@@ -155,6 +164,11 @@ const I18N = {
         bgRandomSelected: 'Random wallpaper updated',
         imageTooLarge: 'Image must be < 3MB',
         lunarUnsupported: 'Lunar calendar not supported',
+        syncLoading: 'Syncing bookmarks…',
+        syncSuccess: '✅ Bookmarks synced',
+        syncFailed: '❌ Sync failed',
+        syncUnavailable: '❌ Sync only in extension mode',
+        manageUnavailable: '❌ Bookmark manager only in extension mode',
         bgUrl: 'URL',
         bgLocal: 'Local',
         langZh: '中文',
@@ -393,6 +407,32 @@ const normalizeUrl = (url) => {
     }
 };
 
+const mapBookmarkNode = (node) => {
+    if (node.url) return { id: node.id, type: 'link', title: node.title || node.url, url: node.url };
+    return {
+        id: node.id,
+        type: 'folder',
+        title: node.title || 'Folder',
+        children: (node.children || []).map(mapBookmarkNode)
+    };
+};
+
+const fetchBookmarksFromChrome = () => new Promise((resolve, reject) => {
+    if (!isExtensionContext() || !chrome.bookmarks) {
+        reject(new Error('unavailable'));
+        return;
+    }
+    chrome.bookmarks.getTree((tree) => {
+        const err = chrome.runtime && chrome.runtime.lastError;
+        if (err) {
+            reject(err);
+            return;
+        }
+        const root = tree && tree[0];
+        resolve(root && root.children ? root.children.map(mapBookmarkNode) : []);
+    });
+});
+
 const isSafeUrl = (url) => !!normalizeUrl(url);
 
 const scheduleIdle = window.requestIdleCallback
@@ -509,6 +549,8 @@ const applyLanguage = () => {
     if ($('btnCloseSidebarBottom')) $('btnCloseSidebarBottom').textContent = t('btnCancel');
     if ($('btnSaveSettings')) $('btnSaveSettings').textContent = t('btnSave');
     if ($('btnRefreshBg')) $('btnRefreshBg').textContent = t('btnRefreshBg');
+    if ($('btnSyncBookmarks')) $('btnSyncBookmarks').querySelector('span').textContent = t('btnSyncBookmarks');
+    if ($('btnManageBookmarks')) $('btnManageBookmarks').querySelector('span').textContent = t('btnManageBookmarks');
     if ($('searchInput')) UIManager.updateSearchPlaceholder();
     if ($('dateLink') && $('lunarDate')) {
         const now = new Date();
@@ -1130,21 +1172,10 @@ const Storage = {
                 return;
             }
 
-            const mapNode = (node) => {
-                if (node.url) return { id: node.id, type: 'link', title: node.title || node.url, url: node.url };
-                return {
-                    id: node.id,
-                    type: 'folder',
-                    title: node.title || 'Folder',
-                    children: (node.children || []).map(mapNode)
-                };
-            };
-
-            chrome.bookmarks.getTree((tree) => {
-                const root = tree && tree[0];
-                State.bookmarks = root && root.children ? root.children.map(mapNode) : [];
+            fetchBookmarksFromChrome().then((bookmarks) => {
+                State.bookmarks = bookmarks || [];
                 resolve();
-            });
+            }).catch(() => resolve());
         };
 
         return new Promise((resolve) => {
@@ -1884,6 +1915,69 @@ function bindEvents() {
             UIManager.enterFolder(State.breadcrumbPath[idx].id);
         }
     };
+
+    const syncBtn = $('btnSyncBookmarks');
+    const syncAvailable = () => isExtensionContext() && chrome.bookmarks;
+    const setSyncBtnState = (enabled) => {
+        if (!syncBtn) return;
+        syncBtn.disabled = !enabled;
+        syncBtn.classList.toggle('is-disabled', !enabled);
+        syncBtn.setAttribute('aria-disabled', String(!enabled));
+    };
+    if (syncBtn) {
+        setSyncBtnState(syncAvailable());
+        syncBtn.addEventListener('click', async () => {
+            if (!syncAvailable()) {
+                showActionToast(t('syncUnavailable'), 'error');
+                setSyncBtnState(false);
+                return;
+            }
+            if (syncBtn.dataset.syncing === '1') return;
+            syncBtn.dataset.syncing = '1';
+            setSyncBtnState(false);
+            showActionToast(t('syncLoading'));
+            try {
+                const bookmarks = await fetchBookmarksFromChrome();
+                State.bookmarks = bookmarks || [];
+                Storage.save();
+                if ($('searchInput') && $('searchInput').value.startsWith('/')) {
+                    $('searchInput').value = '';
+                    SuggestionManager.clear();
+                }
+                State.isSearchMode = false;
+                if (State.bookmarks.length) {
+                    let targetId = State.currentFolderId || 'root';
+                    if (targetId === 'root') {
+                        targetId = UIManager.getDefaultFolderId();
+                    } else {
+                        const path = UIManager.getFolderPath(targetId);
+                        if (!path.length) targetId = UIManager.getDefaultFolderId();
+                    }
+                    UIManager.enterFolder(targetId);
+                } else {
+                    $('bookmarkGrid').innerHTML = `<div style="grid-column:1/-1;text-align:center;opacity:0.6;padding:60px;">${t('welcome')}</div>`;
+                    $('breadcrumb').innerHTML = `<div class="breadcrumb-item">${t('home')}</div>`;
+                }
+                showActionToast(t('syncSuccess'), 'success');
+            } catch (err) {
+                showActionToast(t('syncFailed'), 'error');
+            } finally {
+                syncBtn.dataset.syncing = '';
+                setSyncBtnState(syncAvailable());
+            }
+        });
+    }
+
+    const manageBtn = $('btnManageBookmarks');
+    if (manageBtn) {
+        manageBtn.addEventListener('click', () => {
+            if (!isExtensionContext() || !chrome.tabs) {
+                showActionToast(t('manageUnavailable'), 'error');
+                return;
+            }
+            chrome.tabs.create({ url: 'chrome://bookmarks/' });
+        });
+    }
 
     // --- Drag and Drop Logic (Updated) ---
     DragManager.init();
