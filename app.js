@@ -59,6 +59,8 @@ const I18N = {
         btnSyncBookmarks: '同步书签',
         btnManageBookmarks: '管理书签',
         searchPlaceholder: '{engine} 搜索... ("/" 搜书签)',
+        searchEngineMenu: '选择搜索引擎',
+        searchEngineAria: '搜索引擎：{engine}',
         welcome: '👋 欢迎！<br>请点击右上角 ⚙️ 导入书签',
         home: '🏠 首页',
         emptyFolder: '空文件夹',
@@ -135,6 +137,8 @@ const I18N = {
         btnSyncBookmarks: 'Sync Bookmarks',
         btnManageBookmarks: 'Manage Bookmarks',
         searchPlaceholder: 'Search {engine}... ("/" bookmarks)',
+        searchEngineMenu: 'Choose search engine',
+        searchEngineAria: 'Search engine: {engine}',
         welcome: '👋 Welcome!<br>Click ⚙️ in the top-right to import bookmarks',
         home: '🏠 Home',
         emptyFolder: 'Empty folder',
@@ -552,6 +556,7 @@ const applyLanguage = () => {
     if ($('btnSyncBookmarks')) $('btnSyncBookmarks').querySelector('span').textContent = t('btnSyncBookmarks');
     if ($('btnManageBookmarks')) $('btnManageBookmarks').querySelector('span').textContent = t('btnManageBookmarks');
     if ($('searchInput')) UIManager.updateSearchPlaceholder();
+    if ($('engineToggle')) UIManager.updateSearchEngineUI();
     if ($('dateLink') && $('lunarDate')) {
         const now = new Date();
         const locale = State.language === 'en' ? 'en-US' : 'zh-CN';
@@ -634,6 +639,7 @@ const UIManager = {
         this.applySidebarWidth();
         this.applyBackground(true);
         this.updateSearchPlaceholder();
+        this.updateSearchEngineUI();
 
         scheduleIdle(() => {
             this.renderDock();
@@ -880,6 +886,26 @@ const UIManager = {
 
     updateSearchPlaceholder: function () {
         $('searchInput').placeholder = t('searchPlaceholder', { engine: Config.ENGINES[State.currentEngine].name });
+    },
+
+    updateSearchEngineUI: function () {
+        const toggle = $('engineToggle');
+        const nameEl = $('engineName');
+        const menu = $('engineMenu');
+        if (!toggle || !nameEl || !menu) return;
+        const current = Config.ENGINES[State.currentEngine] || Config.ENGINES.google;
+        nameEl.textContent = current.name;
+        toggle.setAttribute('aria-label', t('searchEngineAria', { engine: current.name }));
+        menu.setAttribute('aria-label', t('searchEngineMenu'));
+        menu.innerHTML = Object.keys(Config.ENGINES).map(k => {
+            const isActive = k === State.currentEngine;
+            return `
+                <button class="engine-item${isActive ? ' active' : ''}" type="button" role="option" aria-selected="${isActive}" data-engine="${k}">
+                    <span class="engine-item-name">${Config.ENGINES[k].name}</span>
+                    <span class="engine-check">${isActive ? '✓' : ''}</span>
+                </button>
+            `;
+        }).join('');
     },
 
     generateAvatar: function (parent, title) {
@@ -1878,6 +1904,19 @@ function bindEvents() {
     const scrollArea = document.querySelector('.scroll-area');
     const suggestionBox = $('suggestionBox');
     const sidebarRoot = $('settingsSidebar');
+    const searchBox = $('searchBox');
+    const engineToggle = $('engineToggle');
+    const engineMenu = $('engineMenu');
+    const closeEngineMenu = () => {
+        if (!searchBox || !engineToggle) return;
+        searchBox.classList.remove('engine-open');
+        engineToggle.setAttribute('aria-expanded', 'false');
+    };
+    const openEngineMenu = () => {
+        if (!searchBox || !engineToggle) return;
+        searchBox.classList.add('engine-open');
+        engineToggle.setAttribute('aria-expanded', 'true');
+    };
     // Navigation
     $('bookmarkGrid').onclick = e => {
         const c = e.target.closest('.card[data-fid]');
@@ -2062,10 +2101,47 @@ function bindEvents() {
         handleSearchInput(e);
     });
     input.addEventListener('focus', () => {
+        closeEngineMenu();
         if (!input.value.trim() && !State.isSearchMode) {
             SuggestionManager.renderHistory();
         }
     });
+
+    if (engineToggle && engineMenu && searchBox) {
+        engineToggle.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (searchBox.classList.contains('engine-open')) {
+                closeEngineMenu();
+            } else {
+                SuggestionManager.clear();
+                openEngineMenu();
+            }
+        });
+
+        engineMenu.addEventListener('click', (e) => {
+            const item = e.target.closest('.engine-item');
+            if (!item) return;
+            const key = item.dataset.engine;
+            if (!Config.ENGINES[key]) return;
+            if (State.currentEngine !== key) {
+                State.currentEngine = key;
+                Storage.save();
+                UIManager.updateSearchPlaceholder();
+                UIManager.updateSearchEngineUI();
+                if ($('settingsSidebar').classList.contains('open')) {
+                    const engInput = document.querySelector(`input[name="eng"][value="${key}"]`);
+                    if (engInput) engInput.checked = true;
+                }
+            }
+            closeEngineMenu();
+            input.focus();
+            const v = input.value.trim();
+            if (v && !v.startsWith('/')) {
+                SuggestionManager.fetch(v);
+            }
+        });
+    }
 
     // Keyboard Navigation
     input.addEventListener('keydown', (e) => {
@@ -2097,6 +2173,7 @@ function bindEvents() {
                 }
             }
         } else if (e.key === 'Escape') {
+            closeEngineMenu();
             if ($('settingsSidebar').classList.contains('open')) SettingsManager.toggle(false);
             else {
                 input.blur();
@@ -2140,6 +2217,7 @@ function bindEvents() {
     document.addEventListener('click', (e) => {
         if (!e.target.closest('.search-box')) {
             SuggestionManager.clear();
+            closeEngineMenu();
         }
     });
 
