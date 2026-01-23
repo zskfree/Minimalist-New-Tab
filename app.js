@@ -1247,9 +1247,14 @@ const Storage = {
                 // If not initialized, load defaults from init-config.json and persist to chrome.storage
                 chrome.storage.local.get(['initialized_v1'], (d) => {
                     if (!d || !d.initialized_v1) {
-                        fetch('./init-config.json').then(r => r.json()).then(cfg => {
+                        fetch(new URL('init-config.json', location.href).toString()).then(r => {
+                            if (!r.ok) throw new Error('init-config not found: ' + r.status);
+                            return r.json();
+                        }).then(cfg => {
+                            console.info('init-config.json loaded and applied (chrome)');
                             loadFromInitAndApply(cfg, 'chrome');
-                        }).catch(() => {
+                        }).catch((err) => {
+                            console.warn('failed to load init-config.json (chrome):', err);
                             chrome.storage.local.get(null, (data) => { applyData(data || {}); afterBaseLoad(resolve); });
                         });
                     } else {
@@ -1259,9 +1264,14 @@ const Storage = {
             } else {
                 // Local (non-extension) mode
                 if (!localStorage.getItem('initialized_v1')) {
-                    fetch('./init-config.json').then(r => r.json()).then(cfg => {
+                    fetch(new URL('init-config.json', location.href).toString()).then(r => {
+                        if (!r.ok) throw new Error('init-config not found: ' + r.status);
+                        return r.json();
+                    }).then(cfg => {
+                        console.info('init-config.json loaded and applied (local)');
                         loadFromInitAndApply(cfg, 'local');
-                    }).catch(() => {
+                    }).catch((err) => {
+                        console.warn('failed to load init-config.json (local):', err);
                         const getLocal = (k) => {
                             try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch { return null; }
                         };
