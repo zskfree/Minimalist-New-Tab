@@ -4,6 +4,8 @@
 
 A lightweight Chrome MV3 extension that replaces the new tab page. Glassmorphism UI, zero-deps and no build step — easy to customize and localize.
 
+![alt text](assets/扩展效果.png)
+
 ---
 
 ## Features
