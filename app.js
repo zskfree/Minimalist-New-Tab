@@ -1205,28 +1205,98 @@ const Storage = {
         };
 
         return new Promise((resolve) => {
-            if (useChromeStorage) {
-                chrome.storage.local.get(null, (data) => {
-                    applyData(data || {});
+            // Helper: map init-config.json keys to internal storage keys and persist
+            const loadFromInitAndApply = (initData, storageType) => {
+                const mapped = {
+                    my_bookmarks: initData.bookmarks || [],
+                    my_quicklinks: initData.quickLinks || [],
+                    my_style_config: initData.styles || {},
+                    my_bg_config: initData.bgConfig || {},
+                    my_search_engine: initData.currentEngine || initData.searchEngine || 'google',
+                    my_lang: initData.language || 'zh',
+                    my_custom_bg_sources: initData.customBgSources || [],
+                    my_search_history: initData.searchHistory || [],
+                    my_search_history_enabled: initData.searchHistoryEnabled !== false && initData.searchHistoryEnabled !== 'false'
+                };
+
+                if (storageType === 'chrome') {
+                    // Persist into chrome.storage and mark initialized
+                    chrome.storage.local.set(Object.assign({}, mapped, { initialized_v1: true }), () => {
+                        applyData(mapped);
+                        afterBaseLoad(resolve);
+                    });
+                } else {
+                    try {
+                        localStorage.setItem('my_bookmarks', JSON.stringify(mapped.my_bookmarks));
+                        localStorage.setItem('my_quicklinks', JSON.stringify(mapped.my_quicklinks));
+                        localStorage.setItem('my_style_config', JSON.stringify(mapped.my_style_config));
+                        localStorage.setItem('my_bg_config', JSON.stringify(mapped.my_bg_config));
+                        localStorage.setItem('my_search_engine', mapped.my_search_engine);
+                        localStorage.setItem('my_lang', mapped.my_lang);
+                        localStorage.setItem('my_custom_bg_sources', JSON.stringify(mapped.my_custom_bg_sources));
+                        localStorage.setItem('my_search_history', JSON.stringify(mapped.my_search_history || []));
+                        localStorage.setItem('my_search_history_enabled', String(!!mapped.my_search_history_enabled));
+                        localStorage.setItem('initialized_v1', 'true');
+                    } catch (e) { /* ignore storage errors */ }
+                    applyData(mapped);
                     afterBaseLoad(resolve);
+                }
+            };
+
+            if (useChromeStorage) {
+                // If not initialized, load defaults from init-config.json and persist to chrome.storage
+                chrome.storage.local.get(['initialized_v1'], (d) => {
+                    if (!d || !d.initialized_v1) {
+                        fetch('./init-config.json').then(r => r.json()).then(cfg => {
+                            loadFromInitAndApply(cfg, 'chrome');
+                        }).catch(() => {
+                            chrome.storage.local.get(null, (data) => { applyData(data || {}); afterBaseLoad(resolve); });
+                        });
+                    } else {
+                        chrome.storage.local.get(null, (data) => { applyData(data || {}); afterBaseLoad(resolve); });
+                    }
                 });
             } else {
-                const getLocal = (k) => {
-                    try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch { return null; }
-                };
-                const localData = {
-                    my_bookmarks: getLocal('my_bookmarks'),
-                    my_quicklinks: getLocal('my_quicklinks'),
-                    my_style_config: getLocal('my_style_config'),
-                    my_bg_config: getLocal('my_bg_config'),
-                    my_search_engine: localStorage.getItem('my_search_engine') || 'google',
-                    my_lang: localStorage.getItem('my_lang') || 'zh',
-                    my_custom_bg_sources: getLocal('my_custom_bg_sources'),
-                    my_search_history: getLocal('my_search_history'),
-                    my_search_history_enabled: localStorage.getItem('my_search_history_enabled')
-                };
-                applyData(localData);
-                afterBaseLoad(resolve);
+                // Local (non-extension) mode
+                if (!localStorage.getItem('initialized_v1')) {
+                    fetch('./init-config.json').then(r => r.json()).then(cfg => {
+                        loadFromInitAndApply(cfg, 'local');
+                    }).catch(() => {
+                        const getLocal = (k) => {
+                            try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch { return null; }
+                        };
+                        const localData = {
+                            my_bookmarks: getLocal('my_bookmarks'),
+                            my_quicklinks: getLocal('my_quicklinks'),
+                            my_style_config: getLocal('my_style_config'),
+                            my_bg_config: getLocal('my_bg_config'),
+                            my_search_engine: localStorage.getItem('my_search_engine') || 'google',
+                            my_lang: localStorage.getItem('my_lang') || 'zh',
+                            my_custom_bg_sources: getLocal('my_custom_bg_sources'),
+                            my_search_history: getLocal('my_search_history'),
+                            my_search_history_enabled: localStorage.getItem('my_search_history_enabled')
+                        };
+                        applyData(localData);
+                        afterBaseLoad(resolve);
+                    });
+                } else {
+                    const getLocal = (k) => {
+                        try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch { return null; }
+                    };
+                    const localData = {
+                        my_bookmarks: getLocal('my_bookmarks'),
+                        my_quicklinks: getLocal('my_quicklinks'),
+                        my_style_config: getLocal('my_style_config'),
+                        my_bg_config: getLocal('my_bg_config'),
+                        my_search_engine: localStorage.getItem('my_search_engine') || 'google',
+                        my_lang: localStorage.getItem('my_lang') || 'zh',
+                        my_custom_bg_sources: getLocal('my_custom_bg_sources'),
+                        my_search_history: getLocal('my_search_history'),
+                        my_search_history_enabled: localStorage.getItem('my_search_history_enabled')
+                    };
+                    applyData(localData);
+                    afterBaseLoad(resolve);
+                }
             }
         });
     },
