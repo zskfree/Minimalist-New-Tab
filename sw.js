@@ -41,7 +41,13 @@ self.addEventListener('fetch', (event) => {
                     caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
                     return res;
                 }).catch(() => cached);
-                return cached || fetchPromise;
+                // Stale-while-revalidate for images (like daily wallpapers)
+                if (cached) {
+                    // Kick off the fetch in the background to update the cache for next time
+                    event.waitUntil(fetchPromise);
+                    return cached;
+                }
+                return fetchPromise;
             })
         );
         return;

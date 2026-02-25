@@ -5,7 +5,7 @@ if (typeof isExtensionContext === 'undefined') {
 /** Module: Constants & Config */
 const Config = {
     BING_API: "https://bing.biturl.top/?resolution=1920&format=image&index=0&mkt=zh-CN",
-    FALLBACK_BG: './assets/defult.png',
+    FALLBACK_BG: './assets/default.png',
     ENGINES: {
         google: { name: "Google", url: "https://www.google.com/search?q=", suggest: "https://suggestqueries.google.com/complete/search?client=chrome&q={q}&callback={cb}" },
         bing: { name: "Bing", url: "https://www.bing.com/search?q=", suggest: "https://api.bing.com/qsonhs.aspx?type=cb&q={q}&cb={cb}" },
@@ -241,24 +241,26 @@ const FAVICON_PROVIDERS = {
     google: { id: 'google', build: (domain) => `https://www.google.com/s2/favicons?domain=${domain}&sz=128` },
     yandex: { id: 'yandex', build: (domain) => `https://favicon.yandex.net/favicon/${domain}?size=120` }
 };
+let _faviconCacheMem = null;
 const getFaviconCache = () => {
-    try {
-        return JSON.parse(localStorage.getItem(FAVICON_CACHE_KEY) || '{}');
-    } catch (e) {
-        return {};
-    }
+    if (_faviconCacheMem) return _faviconCacheMem;
+    try { _faviconCacheMem = JSON.parse(localStorage.getItem(FAVICON_CACHE_KEY) || '{}'); }
+    catch (e) { _faviconCacheMem = {}; }
+    return _faviconCacheMem;
 };
 const setFaviconCache = (cache) => {
+    _faviconCacheMem = cache;
     localStorage.setItem(FAVICON_CACHE_KEY, JSON.stringify(cache));
 };
+let _faviconFailCacheMem = null;
 const getFaviconFailCache = () => {
-    try {
-        return JSON.parse(localStorage.getItem(FAVICON_FAIL_KEY) || '{}');
-    } catch (e) {
-        return {};
-    }
+    if (_faviconFailCacheMem) return _faviconFailCacheMem;
+    try { _faviconFailCacheMem = JSON.parse(localStorage.getItem(FAVICON_FAIL_KEY) || '{}'); }
+    catch (e) { _faviconFailCacheMem = {}; }
+    return _faviconFailCacheMem;
 };
 const setFaviconFailCache = (cache) => {
+    _faviconFailCacheMem = cache;
     localStorage.setItem(FAVICON_FAIL_KEY, JSON.stringify(cache));
 };
 const pruneFaviconFailCache = (cache) => {
@@ -330,8 +332,35 @@ const cacheFavicon = (domain, src) => {
     cache[domain] = src;
     setFaviconCache(cache);
 };
+let iconObserver = null;
+const initIconObserver = () => {
+    if (iconObserver) return;
+    iconObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const img = entry.target;
+                iconObserver.unobserve(img);
+
+                // Start loading process only when visible
+                if (img.dataset.src) {
+                    img.src = img.dataset.src;
+                    delete img.dataset.src;
+                }
+
+                if (img.complete) {
+                    checkIcon(img, img.dataset.url || '', img.dataset.title || '');
+                } else {
+                    startIconTimeout(img);
+                }
+            }
+        });
+    }, { rootMargin: '100px' }); // Load slightly before coming into view
+};
+
 const bindIconEvents = (root) => {
     if (!root) return;
+    initIconObserver();
+
     root.querySelectorAll('img.card-icon, img.dock-icon').forEach((img) => {
         if (img.dataset.bound) return;
         img.dataset.bound = '1';
@@ -343,17 +372,31 @@ const bindIconEvents = (root) => {
             clearIconTimeout(img);
             handleIconError(img, img.dataset.url || '', img.dataset.title || '');
         });
-        startIconTimeout(img);
+
+        // Observe for lazy loading
+        iconObserver.observe(img);
     });
+
+    // Animate folder emojis
+    setTimeout(() => {
+        root.querySelectorAll('.folder-emoji:not(.loaded)').forEach(el => {
+            el.classList.add('loaded');
+        });
+    }, 10);
 };
-const isChinaEnv = () => {
-    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
-    const langs = (navigator.languages && navigator.languages.length)
-        ? navigator.languages
-        : [navigator.language || ''];
-    const langHit = langs.some(l => /^zh(-CN)?/i.test(l));
-    return tz === 'Asia/Shanghai' || tz === 'Asia/Chongqing' || tz === 'Asia/Harbin' || tz === 'Asia/Beijing' || langHit;
-};
+const isChinaEnv = (() => {
+    let _cache = null;
+    return () => {
+        if (_cache !== null) return _cache;
+        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+        const langs = (navigator.languages && navigator.languages.length)
+            ? navigator.languages
+            : [navigator.language || ''];
+        const langHit = langs.some(l => /^zh(-CN)?/i.test(l));
+        _cache = tz === 'Asia/Shanghai' || tz === 'Asia/Chongqing' || tz === 'Asia/Harbin' || tz === 'Asia/Beijing' || langHit;
+        return _cache;
+    };
+})();
 const getFaviconProviders = () => {
     const base = [FAVICON_PROVIDERS.google, FAVICON_PROVIDERS.direct];
     if (isChinaEnv()) {
@@ -443,6 +486,13 @@ const scheduleIdle = window.requestIdleCallback
     ? (cb) => window.requestIdleCallback(cb, { timeout: 500 })
     : (cb) => setTimeout(cb, 1);
 
+// Unified sidebar status helper — sets class + content on any .bg-status element
+const setSidebarStatus = (el, html, type = '') => {
+    if (!el) return;
+    el.className = `bg-status${type ? ' ' + type : ''}`;
+    el.innerHTML = html || '';
+};
+
 const setBgStatus = (text, type = '') => {
     const el = $('bgStatus');
     if (!el) return;
@@ -450,16 +500,23 @@ const setBgStatus = (text, type = '') => {
     el.className = `bg-status${type ? ' ' + type : ''}`;
 };
 
-let bgToastTimer = 0;
+let bgBtnTimer = 0;
 const showBgToast = (text, type = '') => {
-    const el = $('bgToast');
-    if (!el) return;
-    el.textContent = text || '';
-    el.className = `bg-toast show${type ? ' ' + type : ''}`;
-    clearTimeout(bgToastTimer);
-    bgToastTimer = setTimeout(() => {
-        el.className = 'bg-toast';
-    }, 1400);
+    const btn = $('btnRefreshBg');
+    if (!btn) return;
+    const span = btn.querySelector('span');
+    btn.classList.remove('bg-loading', 'bg-success', 'bg-error');
+    if (!type) btn.classList.add('bg-loading');
+    else if (type === 'success') btn.classList.add('bg-success');
+    else if (type === 'error') btn.classList.add('bg-error');
+    if (span && text) span.textContent = text;
+    clearTimeout(bgBtnTimer);
+    if (type === 'success' || type === 'error') {
+        bgBtnTimer = setTimeout(() => {
+            btn.classList.remove('bg-loading', 'bg-success', 'bg-error');
+            if (span) span.textContent = t('btnRefreshBg');
+        }, 1400);
+    }
 };
 
 let actionToastTimer = 0;
@@ -533,26 +590,34 @@ const resolveBgUrl = (type, forceRefresh = false) => {
 
 const applyLanguage = () => {
     document.title = t('appTitle');
-    if ($('settingsTitle')) $('settingsTitle').textContent = t('settingsTitle');
-    if ($('labelAppearance')) $('labelAppearance').textContent = t('labelAppearance');
-    if ($('labelLanguage')) $('labelLanguage').textContent = t('labelLanguage');
-    if ($('labelBackground')) $('labelBackground').textContent = t('labelBackground');
-    if ($('labelCustomBg')) $('labelCustomBg').textContent = t('labelCustomBg');
-    if ($('labelSearchEngine')) $('labelSearchEngine').textContent = t('labelSearchEngine');
-    if ($('labelDock')) $('labelDock').textContent = t('labelDock');
-    if ($('labelImportBookmarks')) $('labelImportBookmarks').textContent = t('labelImportBookmarks');
-    if ($('labelExportConfig')) $('labelExportConfig').textContent = t('labelExportConfig');
-    if ($('labelImportConfig')) $('labelImportConfig').textContent = t('labelImportConfig');
-    if ($('btnAddLinkRow')) $('btnAddLinkRow').textContent = t('btnAddLinkRow');
-    if ($('btnAddCustomBg')) $('btnAddCustomBg').textContent = t('btnAddCustomBg');
-    if ($('labelHistoryToggle')) $('labelHistoryToggle').textContent = t('historyToggle');
-    if ($('btnClearHistory')) $('btnClearHistory').textContent = t('clearHistory');
-    if ($('btnExportConfig')) $('btnExportConfig').textContent = t('btnExportConfig');
-    if ($('exportHint')) $('exportHint').textContent = t('exportHint');
-    if ($('btnReset')) $('btnReset').textContent = t('btnReset');
-    if ($('btnCloseSidebarBottom')) $('btnCloseSidebarBottom').textContent = t('btnCancel');
-    if ($('btnSaveSettings')) $('btnSaveSettings').textContent = t('btnSave');
-    if ($('btnRefreshBg')) $('btnRefreshBg').textContent = t('btnRefreshBg');
+    // id → i18n key 映射，统一批量设置 textContent
+    const textMap = {
+        settingsTitle: 'settingsTitle',
+        labelAppearance: 'labelAppearance',
+        labelLanguage: 'labelLanguage',
+        labelBackground: 'labelBackground',
+        labelCustomBg: 'labelCustomBg',
+        labelSearchEngine: 'labelSearchEngine',
+        labelDock: 'labelDock',
+        labelImportBookmarks: 'labelImportBookmarks',
+        labelExportConfig: 'labelExportConfig',
+        labelImportConfig: 'labelImportConfig',
+        btnAddLinkRow: 'btnAddLinkRow',
+        btnAddCustomBg: 'btnAddCustomBg',
+        labelHistoryToggle: 'historyToggle',
+        btnClearHistory: 'clearHistory',
+        btnExportConfig: 'btnExportConfig',
+        exportHint: 'exportHint',
+        btnReset: 'btnReset',
+        btnCloseSidebarBottom: 'btnCancel',
+        btnSaveSettings: 'btnSave',
+        btnRefreshBg: 'btnRefreshBg'
+    };
+    Object.entries(textMap).forEach(([id, key]) => {
+        const el = $(id);
+        if (el) el.textContent = t(key);
+    });
+    // 含 <span> 子元素的按钮
     if ($('btnSyncBookmarks')) $('btnSyncBookmarks').querySelector('span').textContent = t('btnSyncBookmarks');
     if ($('btnManageBookmarks')) $('btnManageBookmarks').querySelector('span').textContent = t('btnManageBookmarks');
     if ($('searchInput')) UIManager.updateSearchPlaceholder();
@@ -716,10 +781,10 @@ const UIManager = {
             img.style.opacity = '1';
             if (!silent) {
                 if (forceRefreshRandom && preset?.random) {
-                    setBgStatus(t('bgRandomSelected'));
+                    setBgStatus(t('bgRandomSelected'), 'success');
                     showBgToast(t('bgRandomSelected'), 'success');
                 }
-                setBgStatus(t('bgUpdated'));
+                setBgStatus(t('bgUpdated'), 'success');
                 showBgToast(t('bgUpdated'), 'success');
                 setTimeout(() => setBgStatus(''), 1200);
             }
@@ -734,7 +799,7 @@ const UIManager = {
                 img.src = last;
                 return;
             }
-            // Try bundled local fallback first (user-provided `assets/defult.png`), then Bing API
+            // Try bundled local fallback first (user-provided `assets/default.png`), then Bing API
             if (Config.FALLBACK_BG) {
                 img.src = Config.FALLBACK_BG;
                 return;
@@ -763,7 +828,10 @@ const UIManager = {
 
     renderDock: function () {
         const container = $('dockContainer');
-        container.innerHTML = State.quickLinks.map((i, index) => {
+        const fragment = document.createDocumentFragment();
+        const tempDiv = document.createElement('div');
+
+        tempDiv.innerHTML = State.quickLinks.map((i, index) => {
             // 优先使用自定义图标，其次缓存，再使用多个备用源
             const safeUrl = normalizeUrl(i.url);
             const domain = getDomain(safeUrl);
@@ -778,10 +846,17 @@ const UIManager = {
             return `
         <a href="${href}" class="dock-item" target="_blank" rel="noopener" draggable="true" data-index="${index}" data-url="${safeUrl}" data-title="${safeTitle}" role="listitem" aria-label="${safeTitle}"${disabled}>
             <div class="ios-icon">
-                <img class="dock-icon" src="${iconUrl}" data-step="0" data-candidates="${candidatesAttr}" decoding="async" data-url="${safeUrl}" data-title="${safeTitle}">
+                <img class="dock-icon" data-src="${iconUrl}" data-step="0" data-candidates="${candidatesAttr}" decoding="async" data-url="${safeUrl}" data-title="${safeTitle}">
             </div>
         </a>`;
         }).join('');
+
+        while (tempDiv.firstChild) {
+            fragment.appendChild(tempDiv.firstChild);
+        }
+
+        container.innerHTML = '';
+        container.appendChild(fragment);
         bindIconEvents(container);
     },
 
@@ -858,12 +933,16 @@ const UIManager = {
     },
 
     renderGrid: function (items, isSearch = false) {
+        const grid = $('bookmarkGrid');
         if (!items || !items.length) {
-            $('bookmarkGrid').innerHTML = `<div style="grid-column:1/-1;text-align:center;opacity:0.5;padding:20px;">${isSearch ? t('noResults') : t('emptyFolder')}</div>`;
+            grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;opacity:0.5;padding:20px;">${isSearch ? t('noResults') : t('emptyFolder')}</div>`;
             return;
         }
 
-        $('bookmarkGrid').innerHTML = items.map(i => {
+        const fragment = document.createDocumentFragment();
+        const tempDiv = document.createElement('div');
+
+        tempDiv.innerHTML = items.map(i => {
             const escTitle = escapeHtml(i.title || '');
             // Use highlighted title if available (from search), otherwise raw title
             const displayTitle = i.highlightedTitle || escTitle;
@@ -879,9 +958,16 @@ const UIManager = {
             const candidatesAttr = escapeHtml(JSON.stringify(candidates));
             const href = safeUrl || '#';
             const disabled = safeUrl ? '' : ' aria-disabled="true" tabindex="-1"';
-            return `<a href="${href}" class="card" target="_blank" rel="noopener" draggable="true" role="listitem" aria-label="${escTitle}"${disabled}><div class="ios-icon"><img class="card-icon" src="${iconUrl}" data-step="0" data-candidates="${candidatesAttr}" loading="lazy" decoding="async" data-url="${safeUrl}" data-title="${escTitle}"></div><div class="card-title">${displayTitle}</div></a>`;
+            return `<a href="${href}" class="card" target="_blank" rel="noopener" draggable="true" role="listitem" aria-label="${escTitle}"${disabled}><div class="ios-icon"><img class="card-icon" data-src="${iconUrl}" data-step="0" data-candidates="${candidatesAttr}" loading="lazy" decoding="async" data-url="${safeUrl}" data-title="${escTitle}"></div><div class="card-title">${displayTitle}</div></a>`;
         }).join('');
-        bindIconEvents($('bookmarkGrid'));
+
+        while (tempDiv.firstChild) {
+            fragment.appendChild(tempDiv.firstChild);
+        }
+
+        grid.innerHTML = '';
+        grid.appendChild(fragment);
+        bindIconEvents(grid);
     },
 
     updateSearchPlaceholder: function () {
@@ -917,8 +1003,15 @@ const UIManager = {
         for (let i = 0; i < (title || "").length; i++) hash = (title || "").charCodeAt(i) + ((hash << 5) - hash);
         div.style.background = `linear-gradient(135deg, hsl(${hash % 360},70%,60%), hsl(${(hash + 40) % 360},70%,50%))`;
         parent.appendChild(div);
+        // Trigger reflow to ensure transition plays
+        void div.offsetWidth;
+        div.classList.add('loaded');
     }
 };
+
+/** Constants: Search History */
+const SEARCH_HISTORY_MAX_SAVE = 10;
+const SEARCH_HISTORY_MAX_SHOW = 6;
 
 /** Module: Suggestion Manager (API & Rendering) */
 const SuggestionManager = {
@@ -927,7 +1020,7 @@ const SuggestionManager = {
     resolveProvider: function () {
         if (State.currentEngine === 'baidu' || State.currentEngine === 'sogou') return 'baidu';
         if (State.currentEngine === 'duckduckgo' || State.currentEngine === 'yandex') return 'google';
-        if (State.currentEngine === 'bing') return 'google';
+        if (State.currentEngine === 'bing') return 'bing';
         return State.currentEngine === 'google' ? 'google' : 'baidu';
     },
     getSuggestUrl: function (engineKey, query) {
@@ -1009,7 +1102,7 @@ const SuggestionManager = {
         const q = (text || '').trim();
         if (!q || q.startsWith('/')) return;
         const list = State.searchHistory || [];
-        const next = [q, ...list.filter(x => x !== q)].slice(0, 10);
+        const next = [q, ...list.filter(x => x !== q)].slice(0, SEARCH_HISTORY_MAX_SAVE);
         State.searchHistory = next;
         Storage.save();
     },
@@ -1019,7 +1112,7 @@ const SuggestionManager = {
             this.clear();
             return;
         }
-        const list = (State.searchHistory || []).slice(0, 6);
+        const list = (State.searchHistory || []).slice(0, SEARCH_HISTORY_MAX_SHOW);
         if (!list.length) {
             this.clear();
             return;
@@ -1035,8 +1128,17 @@ const SuggestionManager = {
         const q = (text || '').trim();
         State.searchHistory = (State.searchHistory || []).filter(x => x !== q);
         Storage.save();
-        this.renderHistory();
-        showActionToast(t('historyItemRemoved'), 'success');
+        // 在建议框顶部内联显示反馈，比弹出右上角 toast 更贴近操作位置
+        const box = $('suggestionBox');
+        if (box && box.classList.contains('active')) {
+            const fb = document.createElement('div');
+            fb.className = 'suggestion-feedback';
+            fb.textContent = t('historyItemRemoved');
+            box.prepend(fb);
+            setTimeout(() => { fb.remove(); this.renderHistory(); }, 900);
+        } else {
+            this.renderHistory();
+        }
     },
 
     fetch: function (query) {
@@ -1263,6 +1365,20 @@ const Storage = {
                 });
             } else {
                 // Local (non-extension) mode
+                const getLocal = (k) => {
+                    try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch { return null; }
+                };
+                const buildLocalData = () => ({
+                    my_bookmarks: getLocal('my_bookmarks'),
+                    my_quicklinks: getLocal('my_quicklinks'),
+                    my_style_config: getLocal('my_style_config'),
+                    my_bg_config: getLocal('my_bg_config'),
+                    my_search_engine: localStorage.getItem('my_search_engine') || 'google',
+                    my_lang: localStorage.getItem('my_lang') || 'zh',
+                    my_custom_bg_sources: getLocal('my_custom_bg_sources'),
+                    my_search_history: getLocal('my_search_history'),
+                    my_search_history_enabled: localStorage.getItem('my_search_history_enabled')
+                });
                 if (!localStorage.getItem('initialized_v1')) {
                     fetch(new URL('init-config.json', location.href).toString()).then(r => {
                         if (!r.ok) throw new Error('init-config not found: ' + r.status);
@@ -1272,45 +1388,26 @@ const Storage = {
                         loadFromInitAndApply(cfg, 'local');
                     }).catch((err) => {
                         console.warn('failed to load init-config.json (local):', err);
-                        const getLocal = (k) => {
-                            try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch { return null; }
-                        };
-                        const localData = {
-                            my_bookmarks: getLocal('my_bookmarks'),
-                            my_quicklinks: getLocal('my_quicklinks'),
-                            my_style_config: getLocal('my_style_config'),
-                            my_bg_config: getLocal('my_bg_config'),
-                            my_search_engine: localStorage.getItem('my_search_engine') || 'google',
-                            my_lang: localStorage.getItem('my_lang') || 'zh',
-                            my_custom_bg_sources: getLocal('my_custom_bg_sources'),
-                            my_search_history: getLocal('my_search_history'),
-                            my_search_history_enabled: localStorage.getItem('my_search_history_enabled')
-                        };
-                        applyData(localData);
+                        applyData(buildLocalData());
                         afterBaseLoad(resolve);
                     });
                 } else {
-                    const getLocal = (k) => {
-                        try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch { return null; }
-                    };
-                    const localData = {
-                        my_bookmarks: getLocal('my_bookmarks'),
-                        my_quicklinks: getLocal('my_quicklinks'),
-                        my_style_config: getLocal('my_style_config'),
-                        my_bg_config: getLocal('my_bg_config'),
-                        my_search_engine: localStorage.getItem('my_search_engine') || 'google',
-                        my_lang: localStorage.getItem('my_lang') || 'zh',
-                        my_custom_bg_sources: getLocal('my_custom_bg_sources'),
-                        my_search_history: getLocal('my_search_history'),
-                        my_search_history_enabled: localStorage.getItem('my_search_history_enabled')
-                    };
-                    applyData(localData);
+                    applyData(buildLocalData());
                     afterBaseLoad(resolve);
                 }
             }
         });
     },
+    _saveTimer: 0,
     save: function () {
+        clearTimeout(this._saveTimer);
+        this._saveTimer = setTimeout(() => this._doSave(), 300);
+    },
+    saveNow: function () {
+        clearTimeout(this._saveTimer);
+        this._doSave();
+    },
+    _doSave: function () {
         const data = {
             my_bookmarks: State.bookmarks,
             my_quicklinks: State.quickLinks,
@@ -1372,7 +1469,7 @@ const Storage = {
                 State.currentEngine = data.currentEngine || 'google';
                 State.language = data.language || State.language;
                 State.customBgSources = data.customBgSources || State.customBgSources;
-                this.save();
+                this.saveNow();
 
                 UIManager.applyStyles();
                 UIManager.applyBackground();
@@ -1388,15 +1485,9 @@ const Storage = {
 
                 if ($('settingsSidebar').classList.contains('open')) SettingsManager.render();
 
-                if (status) {
-                    status.innerHTML = t('importSuccess');
-                    status.style.color = '#4cd964';
-                }
+                if (status) setSidebarStatus(status, t('importSuccess'), 'success');
             } catch (err) {
-                if (status) {
-                    status.textContent = t('importInvalid');
-                    status.style.color = '#ff3b30';
-                }
+                if (status) setSidebarStatus(status, t('importInvalid'), 'error');
             }
         };
         r.readAsText(file);
@@ -1422,6 +1513,7 @@ window.checkIcon = function (img, url, title) {
         return;
     }
     img.dataset.state = "loaded";
+    img.classList.add("loaded");
     clearIconTimeout(img);
     const domain = getDomain(url);
     const src = img.currentSrc || img.src;
@@ -1528,8 +1620,10 @@ const SettingsManager = {
             const row = document.createElement('div');
             row.className = 'custom-bg-row';
             row.dataset.id = s.id;
+            const safePreviewUrl = escapeHtml(normalizeUrl(s.url || '') || '');
+            const previewStyle = safePreviewUrl ? `background-image:url('${safePreviewUrl}')` : '';
             row.innerHTML = `
-                        <div class="custom-preview" style="background-image:url('${escapeHtml(s.url || '')}')"></div>
+                        <div class="custom-preview" style="${previewStyle}"></div>
                         <div class="custom-inputs">
                             <input class="link-input" type="text" value="${s.name || ''}" placeholder="${t('customName')}">
                             <input class="link-input" type="text" value="${s.url || ''}" placeholder="${t('customUrl')}">
@@ -1574,7 +1668,7 @@ const SettingsManager = {
                         $('bg-layer').src = ev.target.result;
                     };
                     r.readAsDataURL(f);
-                } else alert(t('imageTooLarge'));
+                } else showActionToast(t('imageTooLarge'), 'error');
             };
         } else if (sourcesMap[type]) {
             area.innerHTML = '';
@@ -1605,8 +1699,10 @@ const SettingsManager = {
         const row = document.createElement('div');
         row.className = 'custom-bg-row';
         row.dataset.id = d.id;
+        const safePreviewUrl = escapeHtml(normalizeUrl(d.url || '') || '');
+        const previewStyle = safePreviewUrl ? `background-image:url('${safePreviewUrl}')` : '';
         row.innerHTML = `
-                        <div class="custom-preview" style="background-image:url('${escapeHtml(d.url || '')}')"></div>
+                        <div class="custom-preview" style="${previewStyle}"></div>
                         <div class="custom-inputs">
                             <input class="link-input" type="text" value="${d.name || ''}" placeholder="${t('customName')}">
                             <input class="link-input" type="text" value="${d.url || ''}" placeholder="${t('customUrl')}">
@@ -1670,7 +1766,7 @@ const SettingsManager = {
         // Import
         if (State.pendingImportData) { State.bookmarks = State.pendingImportData; UIManager.enterFolder(UIManager.getDefaultFolderId()); }
 
-        Storage.save();
+        Storage.saveNow();
         location.reload();
     },
 
@@ -1703,11 +1799,9 @@ const SettingsManager = {
 
             if (final.length) {
                 State.pendingImportData = final;
-                $('importStatus').innerHTML = t('importDetected', { count: final.length });
-                $('importStatus').style.color = '#4cd964';
+                setSidebarStatus($('importStatus'), t('importDetected', { count: final.length }), 'success');
             } else {
-                $('importStatus').textContent = t('importFormatError');
-                $('importStatus').style.color = '#ff3b30';
+                setSidebarStatus($('importStatus'), t('importFormatError'), 'error');
             }
         };
         r.readAsText(file);
@@ -1773,6 +1867,8 @@ const DragManager = {
         // 判断拖拽源
         if (this.dragSrcEl.classList.contains('dock-item')) {
             this.dragSrcEl.classList.add('dragging');
+            this.dragSrcEl.style.transform = 'scale(1.05)';
+            this.dragSrcEl.style.boxShadow = '0 20px 40px rgba(0,0,0,0.4)';
             e.dataTransfer.effectAllowed = 'move';
             // 传输索引
             e.dataTransfer.setData('text/plain', JSON.stringify({
@@ -1785,6 +1881,9 @@ const DragManager = {
                 e.preventDefault();
                 return;
             }
+            this.dragSrcEl.classList.add('dragging');
+            this.dragSrcEl.style.transform = 'scale(1.05)';
+            this.dragSrcEl.style.boxShadow = '0 20px 40px rgba(0,0,0,0.4)';
             e.dataTransfer.effectAllowed = 'copy';
             const url = this.dragSrcEl.getAttribute('href');
             const title = this.dragSrcEl.querySelector('.card-title').innerText;
@@ -1878,7 +1977,7 @@ const DragManager = {
         }
 
         // 保存并重新渲染
-        Storage.save();
+        Storage.saveNow();
         UIManager.renderDock();
         this.handleDragEnd();
     },
@@ -1951,7 +2050,7 @@ const DragManager = {
 
         if (this.touchDragIndex >= 0) {
             this.moveDockItem(this.touchDragIndex, dropIndex);
-            Storage.save();
+            Storage.saveNow();
             UIManager.renderDock();
         }
 
@@ -1965,6 +2064,8 @@ const DragManager = {
     handleDragEnd: function () {
         if (this.dragSrcEl) {
             this.dragSrcEl.classList.remove('dragging');
+            this.dragSrcEl.style.transform = '';
+            this.dragSrcEl.style.boxShadow = '';
         }
         $('dockContainer').classList.remove('drag-over');
         this.clearDragIndicators();
@@ -2007,13 +2108,48 @@ function bindEvents() {
         }
     };
     $('bookmarkGrid').onkeydown = e => {
-        if (e.key !== 'Enter' && e.key !== ' ') return;
-        const c = e.target.closest('.card[data-fid]');
-        if (c) {
-            e.preventDefault();
-            State.breadcrumbPath.push({ id: c.dataset.fid, title: c.dataset.ftitle });
-            UIManager.enterFolder(c.dataset.fid);
-            if (scrollArea) scrollArea.scrollTop = 0;
+        const activeEl = document.activeElement;
+        const cards = Array.from($('bookmarkGrid').querySelectorAll('.card'));
+        const idx = cards.indexOf(activeEl);
+
+        if (e.key === 'Enter' || e.key === ' ') {
+            const c = activeEl.closest('.card[data-fid]');
+            if (c) {
+                e.preventDefault();
+                State.breadcrumbPath.push({ id: c.dataset.fid, title: c.dataset.ftitle });
+                UIManager.enterFolder(c.dataset.fid);
+                if (scrollArea) scrollArea.scrollTop = 0;
+            }
+            return;
+        }
+
+        if (!['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp'].includes(e.key)) return;
+        if (idx === -1) return;
+        e.preventDefault();
+
+        let target = -1;
+        if (e.key === 'ArrowRight') {
+            target = Math.min(idx + 1, cards.length - 1);
+        } else if (e.key === 'ArrowLeft') {
+            target = Math.max(idx - 1, 0);
+        } else {
+            // Compute column count from actual positions
+            const firstRect = cards[0].getBoundingClientRect();
+            let colCount = 1;
+            for (let i = 1; i < cards.length; i++) {
+                if (Math.abs(cards[i].getBoundingClientRect().top - firstRect.top) < 4) colCount++;
+                else break;
+            }
+            if (e.key === 'ArrowDown') {
+                target = Math.min(idx + colCount, cards.length - 1);
+            } else if (e.key === 'ArrowUp') {
+                target = Math.max(idx - colCount, 0);
+            }
+        }
+
+        if (target >= 0 && target !== idx) {
+            cards[target].focus();
+            cards[target].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
         }
     };
     $('breadcrumb').onclick = e => {
@@ -2053,8 +2189,8 @@ function bindEvents() {
             }
             if (syncBtn.dataset.syncing === '1') return;
             syncBtn.dataset.syncing = '1';
+            syncBtn.classList.add('syncing');
             setSyncBtnState(false);
-            showActionToast(t('syncLoading'));
             try {
                 const bookmarks = await fetchBookmarksFromChrome();
                 State.bookmarks = bookmarks || [];
@@ -2077,10 +2213,21 @@ function bindEvents() {
                     $('bookmarkGrid').innerHTML = `<div style="grid-column:1/-1;text-align:center;opacity:0.6;padding:60px;">${t('welcome')}</div>`;
                     $('breadcrumb').innerHTML = `<div class="breadcrumb-item">${t('home')}</div>`;
                 }
-                showActionToast(t('syncSuccess'), 'success');
+                // 在按钮上直接显示成功状态
+                syncBtn.classList.add('sync-success');
+                const syncSpan = syncBtn.querySelector('span');
+                const origText = syncSpan ? syncSpan.textContent : '';
+                if (syncSpan) syncSpan.textContent = t('syncSuccess');
+                setTimeout(() => {
+                    syncBtn.classList.remove('sync-success');
+                    if (syncSpan) syncSpan.textContent = origText;
+                }, 2000);
             } catch (err) {
                 showActionToast(t('syncFailed'), 'error');
+                syncBtn.classList.add('sync-error');
+                setTimeout(() => syncBtn.classList.remove('sync-error'), 2000);
             } finally {
+                syncBtn.classList.remove('syncing');
                 syncBtn.dataset.syncing = '';
                 setSyncBtnState(syncAvailable());
             }
@@ -2285,11 +2432,29 @@ function bindEvents() {
 
     // Global Shortcut
     document.addEventListener('keydown', e => {
-        if (e.key === '/' && document.activeElement !== input) {
+        const isInput = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName) || document.activeElement.isContentEditable;
+
+        if (e.key === '/' && !isInput) {
             e.preventDefault();
             input.focus();
             input.value = '/';
             input.dispatchEvent(new Event('input'));
+        } else if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+            e.preventDefault();
+            input.focus();
+        } else if (e.key === 'Escape') {
+            if (document.activeElement === input) {
+                input.blur();
+                input.value = '';
+                input.dispatchEvent(new Event('input'));
+            } else if ($('settingsSidebar').classList.contains('open')) {
+                SettingsManager.toggle(false);
+            }
+        } else if (e.key === 'Backspace' && !isInput) {
+            if (State.currentFolderId !== 'root' && State.breadcrumbPath.length > 1) {
+                const parentId = State.breadcrumbPath[State.breadcrumbPath.length - 2].id;
+                UIManager.enterFolder(parentId);
+            }
         }
     });
 
@@ -2359,6 +2524,24 @@ function bindEvents() {
         }
     };
     $('sidebarBackdrop').onclick = $('btnCloseSidebarTop').onclick = $('btnCloseSidebarBottom').onclick = () => SettingsManager.toggle(false);
+
+    // Swipe to close sidebar
+    let sidebarTouchStartX = 0;
+    $('settingsSidebar').addEventListener('touchstart', e => {
+        sidebarTouchStartX = e.touches[0].clientX;
+    }, { passive: true });
+    $('settingsSidebar').addEventListener('touchmove', e => {
+        if (sidebarTouchStartX === 0) return;
+        const dx = e.touches[0].clientX - sidebarTouchStartX;
+        if (dx > 50) { // Swipe right threshold
+            SettingsManager.toggle(false);
+            sidebarTouchStartX = 0;
+        }
+    }, { passive: true });
+    $('settingsSidebar').addEventListener('touchend', () => {
+        sidebarTouchStartX = 0;
+    });
+
     $('btnSaveSettings').onclick = () => SettingsManager.save();
     $('btnReset').onclick = Storage.reset;
     $('btnExportConfig').onclick = () => Storage.export();

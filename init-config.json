@@ -102,7 +102,7 @@
     },
     "bgConfig": {
         "type": "fallback",
-        "value": "./assets/defult.png"
+        "value": "./assets/default.png"
     },
     "currentEngine": "baidu",
     "language": "zh",
