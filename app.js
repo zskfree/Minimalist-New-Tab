@@ -1551,12 +1551,35 @@ window.handleIconError = function (img, url, title) {
 /** Module: Settings Manager */
 const SettingsManager = {
     toggle: function (open) {
-        const action = open ? 'add' : 'remove';
-        $('settingsSidebar').classList[action]('open');
-        $('sidebarBackdrop').classList[action]('open');
-        $('mainWrapper').classList[open ? 'add' : 'remove']('sidebar-open');
-        if (open) { this.render(); UIManager.applySidebarWidth(); }
-        else { Storage.load().then(() => { applyLanguage(); UIManager.applyStyles(); UIManager.applyBackground(false, { silent: true }); UIManager.renderDock(); UIManager.updateSearchPlaceholder(); }); }
+        const sidebar = $('settingsSidebar');
+        if (open) {
+            // display:none → flex，然后下帧触发 transform 过渡（否则浏览器会合并跳过动画）
+            sidebar.style.display = 'flex';
+            sidebar.style.willChange = 'transform';
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    sidebar.classList.add('open');
+                });
+            });
+            $('sidebarBackdrop').classList.add('open');
+            $('mainWrapper').classList.add('sidebar-open');
+            this.render();
+            UIManager.applySidebarWidth();
+        } else {
+            sidebar.style.willChange = 'transform';
+            sidebar.classList.remove('open');
+            $('sidebarBackdrop').classList.remove('open');
+            $('mainWrapper').classList.remove('sidebar-open');
+            // 过渡结束后才 display:none，彻底停止 backdrop-filter 合成
+            const onEnd = (e) => {
+                if (e.propertyName !== 'transform') return;
+                sidebar.style.display = 'none';
+                sidebar.style.willChange = '';
+                sidebar.removeEventListener('transitionend', onEnd);
+            };
+            sidebar.addEventListener('transitionend', onEnd);
+            Storage.load().then(() => { applyLanguage(); UIManager.applyStyles(); UIManager.applyBackground(false, { silent: true }); UIManager.renderDock(); UIManager.updateSearchPlaceholder(); });
+        }
     },
 
     render: function () {
@@ -2612,6 +2635,44 @@ function bindEvents() {
 }
 
 // Init
+/**
+ * 用 Canvas 生成静态噪点纹理，替代 CSS 内联 SVG feTurbulence。
+ * SVG feTurbulence + mix-blend-mode 在 Edge 中会导致全页每帧重合成，性能极差。
+ * Canvas 只运行一次，生成 PNG data URL 后作为 background-image 平铺，消耗极低。
+ */
+function initNoiseOverlay() {
+    const el = document.getElementById('noise-overlay');
+    if (!el) return;
+    try {
+        const SIZE = 200;
+        const canvas = document.createElement('canvas');
+        canvas.width = SIZE;
+        canvas.height = SIZE;
+        const ctx = canvas.getContext('2d');
+        const imageData = ctx.createImageData(SIZE, SIZE);
+        const data = imageData.data;
+        // 使用 xorshift 伪随机（比 Math.random 快，且噪点更均匀）
+        let seed = 0xdeadbeef;
+        const rand = () => {
+            seed ^= seed << 13;
+            seed ^= seed >> 17;
+            seed ^= seed << 5;
+            return (seed >>> 0) / 0xffffffff;
+        };
+        for (let i = 0; i < data.length; i += 4) {
+            const v = (rand() * 255) | 0;
+            data[i] = v;
+            data[i + 1] = v;
+            data[i + 2] = v;
+            data[i + 3] = 255;
+        }
+        ctx.putImageData(imageData, 0, 0);
+        el.style.backgroundImage = `url(${canvas.toDataURL('image/png')})`;
+    } catch (e) {
+        // Canvas 不可用时静默忽略，不影响其他功能
+    }
+}
+
 window.onload = () => {
     Storage.load().then(() => {
         applyLanguage();
@@ -2621,4 +2682,5 @@ window.onload = () => {
             navigator.serviceWorker.register('./sw.js').catch(() => { });
         }
     });
+    initNoiseOverlay();
 };
