@@ -26,6 +26,12 @@
             --glass-glow: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 10px 28px rgba(0, 0, 0, 0.35);
             --glass-radius: 16px;
             --glass-blur: 16px;
+            --card-radius: 16px;
+            --accent-soft: rgba(10, 132, 255, 0.2);
+            --accent-soft-strong: rgba(10, 132, 255, 0.35);
+            --accent-glow: rgba(10, 132, 255, 0.4);
+            --accent-surface: rgba(10, 132, 255, 0.78);
+            --accent-surface-strong: rgba(72, 166, 255, 0.86);
 
             /* Dynamic Config Defaults */
             --icon-size: 60px;
@@ -33,8 +39,18 @@
             --card-font-size: 13px;
             --grid-gap: 24px;
             --grid-min-width: 90px;
+            --bookmark-hover-lift: 6px;
+            --bookmark-hover-scale: 1.1;
             --bg-blur: 0px;
             --bg-overlay-opacity: 0.2;
+            --hero-width: 560px;
+            --content-max-width: 1040px;
+            --top-fade: linear-gradient(to bottom, rgba(3, 8, 18, 0.42), rgba(3, 8, 18, 0.1) 34%, transparent 72%);
+            --bottom-fade: linear-gradient(to top, rgba(3, 8, 18, 0.3), transparent 38%);
+            --surface-dark: rgba(14, 18, 30, 0.34);
+            --surface-dark-strong: rgba(14, 18, 30, 0.52);
+            --surface-stroke: rgba(255, 255, 255, 0.14);
+            --surface-shadow: 0 18px 44px rgba(0, 0, 0, 0.3);
         }
 
         * {
@@ -80,9 +96,12 @@
         #overlay {
             position: fixed;
             inset: 0;
-            background: #000;
+            background:
+                var(--top-fade),
+                var(--bottom-fade),
+                rgba(0, 0, 0, 1);
             z-index: -1;
-            opacity: var(--bg-overlay-opacity);
+            opacity: calc(var(--bg-overlay-opacity) + 0.04);
             pointer-events: none;
             transition: opacity 0.1s;
         }
@@ -122,16 +141,26 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            margin: 6vh 0 24px 0;
+            margin: 8vh 0 18px 0;
             animation: fadeInDown 0.6s ease-out;
+            position: relative;
             z-index: 200;
         }
 
+        .header-section::before {
+            content: '';
+            position: absolute;
+            inset: -24px -40px;
+            background: radial-gradient(circle at center, rgba(255, 255, 255, 0.06), transparent 62%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
         #time {
-            font-size: 3.2rem;
-            font-weight: 300;
-            letter-spacing: -2px;
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2), 0 10px 30px rgba(0, 0, 0, 0.4);
+            font-size: clamp(3.8rem, 8vw, 5.4rem);
+            font-weight: 280;
+            letter-spacing: -3px;
+            text-shadow: 0 8px 28px rgba(0, 0, 0, 0.34);
             line-height: 1;
             font-variant-numeric: tabular-nums;
         }
@@ -157,13 +186,13 @@
             align-items: center;
             gap: 10px;
             margin: 0;
-            padding: 6px 12px;
+            padding: 7px 14px;
             border-radius: 999px;
-            background: rgba(255, 255, 255, 0.12);
-            border: 1px solid rgba(255, 255, 255, 0.18);
-            backdrop-filter: blur(16px) saturate(130%);
-            -webkit-backdrop-filter: blur(16px) saturate(130%);
-            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28), inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+            background: rgba(18, 24, 40, 0.22);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            backdrop-filter: blur(var(--glass-blur)) saturate(130%);
+            -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(130%);
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
             font-size: 0.82rem;
             opacity: 0.95;
             letter-spacing: 0.2px;
@@ -196,15 +225,15 @@
 
         .search-box {
             width: 100%;
-            max-width: 420px;
+            max-width: var(--hero-width);
             position: relative;
             margin-bottom: 5px;
-            background: rgba(255, 255, 255, 0.16);
-            border: 1px solid rgba(255, 255, 255, 0.18);
-            border-radius: 18px;
-            backdrop-filter: blur(16px) saturate(140%);
-            -webkit-backdrop-filter: blur(16px) saturate(140%);
-            box-shadow: 0 16px 36px rgba(0, 0, 0, 0.28), inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+            background: var(--surface-dark);
+            border: 1px solid var(--surface-stroke);
+            border-radius: calc(var(--glass-radius) + 2px);
+            backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+            -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+            box-shadow: var(--surface-shadow);
             transition: background 0.25s ease, border-color 0.25s ease;
             overflow: visible;
             /* will-change removed: 常驻 will-change:transform,opacity 在 Edge 中持续占用 GPU 合成层 */
@@ -223,9 +252,9 @@
             content: '';
             position: absolute;
             inset: -2px;
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 18px 44px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+            border-radius: calc(var(--glass-radius) + 4px);
+            border: 1px solid var(--accent-soft-strong);
+            box-shadow: 0 18px 44px rgba(0, 0, 0, 0.35), 0 0 0 1px var(--accent-soft), 0 0 28px var(--accent-glow);
             opacity: 0;
             pointer-events: none;
             transition: opacity 0.25s ease;
@@ -238,15 +267,15 @@
         }
 
         .search-box:focus-within {
-            background: rgba(255, 255, 255, 0.28);
-            border-color: rgba(255, 255, 255, 0.35);
+            background: var(--surface-dark-strong);
+            border-color: var(--accent-soft-strong);
         }
 
         .search-input {
             flex: 1;
             width: auto;
             padding: 12px 20px;
-            border-radius: 14px;
+            border-radius: calc(var(--glass-radius) - 2px);
             border: 1px solid transparent;
             background: transparent;
             /* backdrop-filter removed: parent .search-box already has blur */
@@ -271,8 +300,8 @@
             outline: none;
             box-shadow: none;
             border-color: transparent;
-            border-bottom-left-radius: 14px;
-            border-bottom-right-radius: 14px;
+            border-bottom-left-radius: calc(var(--glass-radius) - 2px);
+            border-bottom-right-radius: calc(var(--glass-radius) - 2px);
         }
 
         .search-input:focus::placeholder {
@@ -300,7 +329,7 @@
             background: rgba(0, 0, 0, 0.36);
             color: #fff;
             padding: 8px 12px;
-            border-radius: 14px;
+            border-radius: calc(var(--glass-radius) - 2px);
             font-size: 0.82rem;
             display: inline-flex;
             align-items: center;
@@ -334,13 +363,11 @@
             min-width: 150px;
             padding: 8px;
             border-radius: 12px;
-            background: rgba(255, 255, 255, 0.92);
-            /* light frosted glass */
-            backdrop-filter: blur(16px) saturate(120%);
-            -webkit-backdrop-filter: blur(16px) saturate(120%);
-            border: 1px solid rgba(10, 132, 255, 0.9);
-            /* accent-based border for neon */
-            box-shadow: 0 14px 36px rgba(10, 132, 255, 0.08), 0 0 14px rgba(10, 132, 255, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+            background: rgba(16, 20, 32, 0.78);
+            backdrop-filter: blur(calc(var(--glass-blur) + 4px)) saturate(130%);
+            -webkit-backdrop-filter: blur(calc(var(--glass-blur) + 4px)) saturate(130%);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 20px 48px rgba(0, 0, 0, 0.34);
             display: none;
             flex-direction: column;
             gap: 6px;
@@ -356,26 +383,17 @@
             inset: 0;
             border-radius: inherit;
             pointer-events: none;
-            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
             z-index: 2;
         }
 
         .engine-menu::after {
-            content: '';
-            position: absolute;
-            inset: -6px;
-            border-radius: calc(12px + 6px);
-            background: linear-gradient(90deg, rgba(10, 132, 255, 0.65), rgba(157, 90, 255, 0.28));
-            filter: blur(10px);
-            opacity: 0.95;
-            z-index: 0;
-            mix-blend-mode: screen;
-            transition: opacity 0.15s ease, transform 0.15s ease;
+            display: none;
         }
 
         .engine-menu:hover::after {
             opacity: 1;
-            transform: scale(1.02);
+            transform: none;
         }
 
         .search-box.engine-open .engine-menu {
@@ -387,8 +405,7 @@
             width: 100%;
             border: 1px solid transparent;
             background: transparent;
-            color: #111;
-            /* dark text for light menu */
+            color: rgba(255, 255, 255, 0.92);
             padding: 8px 10px;
             border-radius: 12px;
             display: flex;
@@ -404,14 +421,14 @@
 
 
         .engine-item+.engine-item {
-            border-top: 1px solid rgba(0, 0, 0, 0.06);
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
         }
 
         .engine-item:hover,
         .engine-item.active {
-            background: rgba(0, 0, 0, 0.06);
-            border-color: rgba(10, 132, 255, 0.12);
-            box-shadow: 0 8px 22px rgba(10, 132, 255, 0.06), inset 0 0 6px rgba(10, 132, 255, 0.04);
+            background: rgba(255, 255, 255, 0.08);
+            border-color: var(--accent-soft);
+            box-shadow: none;
             transform: translateY(-1px);
         }
 
@@ -430,14 +447,14 @@
             right: 0;
             top: calc(100% + 8px);
             width: 100%;
-            background: rgba(255, 255, 255, 0.86);
+            background: rgba(16, 20, 32, 0.78);
             /* light glass */
-            backdrop-filter: blur(18px) saturate(120%);
-            -webkit-backdrop-filter: blur(18px) saturate(120%);
+            backdrop-filter: blur(calc(var(--glass-blur) + 4px)) saturate(130%);
+            -webkit-backdrop-filter: blur(calc(var(--glass-blur) + 4px)) saturate(130%);
             border-radius: 14px;
-            border: 1px solid rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.12);
             /* visible, soft border */
-            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+            box-shadow: 0 20px 48px rgba(0, 0, 0, 0.34);
             overflow: hidden;
             display: none;
             flex-direction: column;
@@ -461,7 +478,7 @@
             inset: 0;
             border-radius: inherit;
             pointer-events: none;
-            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), inset 0 -6px 18px rgba(0, 0, 0, 0.06);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), inset 0 -6px 18px rgba(0, 0, 0, 0.12);
             z-index: 1;
         }
 
@@ -477,7 +494,7 @@
 
         .suggestion-item {
             padding: 10px 20px 10px 40px;
-            color: #111;
+            color: rgba(255, 255, 255, 0.92);
             font-size: 0.95rem;
             font-weight: 500;
             cursor: pointer;
@@ -491,9 +508,9 @@
 
         .suggestion-item:hover,
         .suggestion-item.selected {
-            background: rgba(0, 0, 0, 0.06);
-            color: #111;
-            box-shadow: 0 6px 18px rgba(10, 132, 255, 0.10), 0 0 8px rgba(10, 132, 255, 0.08) inset;
+            background: rgba(255, 255, 255, 0.08);
+            color: rgba(255, 255, 255, 0.96);
+            box-shadow: none;
             transform: translateZ(0);
         }
 
@@ -510,7 +527,7 @@
 
         .suggestion-source {
             font-size: 0.75rem;
-            color: rgba(0, 0, 0, 0.6);
+            color: rgba(255, 255, 255, 0.56);
             opacity: 0.9;
             min-width: 44px;
             text-align: right;
@@ -544,14 +561,14 @@
 
         .dock-container {
             display: flex;
-            gap: 16px;
-            padding: 12px 20px;
-            background: rgba(240, 240, 240, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 30px;
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            gap: 14px;
+            padding: 10px 18px;
+            background: rgba(14, 18, 28, 0.22);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: calc(var(--glass-radius) + 10px);
+            backdrop-filter: blur(calc(var(--glass-blur) + 4px));
+            -webkit-backdrop-filter: blur(calc(var(--glass-blur) + 4px));
+            box-shadow: 0 16px 30px rgba(0, 0, 0, 0.22);
             pointer-events: auto;
             transition: transform 0.2s, background 0.2s, border-color 0.2s;
         }
@@ -629,12 +646,15 @@
             min-height: 0;
             display: flex;
             flex-direction: column;
+            align-items: center;
             animation: fadeInUp 0.8s ease-out 0.2s backwards;
         }
 
         .workspace-header {
             display: flex;
             justify-content: center;
+            width: 100%;
+            max-width: var(--content-max-width);
             margin-bottom: 10px;
             flex-shrink: 0;
         }
@@ -650,11 +670,11 @@
             gap: 6px;
             align-items: center;
             padding: 5px 14px;
-            background: rgba(0, 0, 0, 0.3);
+            background: rgba(10, 14, 24, 0.24);
             border-radius: 18px;
             /* backdrop-filter removed: inside sidebar which already has backdrop-filter */
             border: 1px solid rgba(255, 255, 255, 0.08);
-            font-size: 0.9rem;
+            font-size: 0.84rem;
         }
 
         .sync-btn {
@@ -663,17 +683,23 @@
             gap: 6px;
             padding: 5px 12px;
             border-radius: 18px;
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            background: rgba(0, 0, 0, 0.28);
-            color: rgba(255, 255, 255, 0.9);
-            font-size: 0.86rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(10, 14, 24, 0.22);
+            color: rgba(255, 255, 255, 0.78);
+            font-size: 0.82rem;
             cursor: pointer;
             transition: 0.2s ease;
             /* backdrop-filter removed: inside sidebar */
         }
 
+        .sync-btn[hidden] {
+            display: none !important;
+        }
+
         .sync-btn:hover {
-            background: rgba(255, 255, 255, 0.12);
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.16);
+            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
             color: #fff;
         }
 
@@ -692,6 +718,452 @@
         .sync-btn.is-disabled {
             opacity: 0.5;
             cursor: not-allowed;
+        }
+
+        body.bookmark-modal-open {
+            overflow: hidden;
+        }
+
+        #bookmarkModalRoot {
+            position: fixed;
+            inset: 0;
+            z-index: 1200;
+        }
+
+        #bookmarkModalRoot[hidden] {
+            display: none;
+        }
+
+        .card.is-edit-mode {
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0));
+        }
+
+        .card.is-edit-mode:hover {
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0));
+            border-color: rgba(255, 255, 255, 0.14);
+        }
+
+        .bookmark-card-cue {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: rgba(10, 12, 22, 0.52);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
+            opacity: 0.72;
+            transform: translateY(0);
+            transition: 0.22s ease;
+            cursor: pointer;
+            z-index: 3;
+        }
+
+        .card.is-edit-mode:hover .bookmark-card-cue,
+        .card.is-edit-mode:focus-visible .bookmark-card-cue {
+            opacity: 1;
+            transform: translateY(-1px);
+            border-color: rgba(255, 255, 255, 0.24);
+        }
+
+        .bookmark-card-cue:hover,
+        .bookmark-card-cue:focus-visible {
+            opacity: 1;
+            background: rgba(20, 24, 36, 0.74);
+            border-color: rgba(255, 255, 255, 0.28);
+            outline: none;
+        }
+
+        .bookmark-card-cue svg {
+            width: 14px;
+            height: 14px;
+            stroke: rgba(255, 255, 255, 0.9);
+            fill: none;
+            stroke-width: 1.9;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .bookmark-card-cue-delete {
+            left: 10px;
+            right: auto;
+            background: rgba(56, 18, 24, 0.56);
+            border-color: rgba(255, 160, 176, 0.2);
+        }
+
+        .bookmark-card-cue-delete:hover,
+        .bookmark-card-cue-delete:focus-visible {
+            background: rgba(92, 22, 34, 0.78);
+            border-color: rgba(255, 178, 190, 0.3);
+        }
+
+        .dock-card-cue {
+            top: -10px;
+            right: -10px;
+            width: 28px;
+            height: 28px;
+            opacity: 0.82;
+            z-index: 4;
+        }
+
+        .dock-card-cue svg {
+            width: 13px;
+            height: 13px;
+        }
+
+        .dock-card-cue-delete {
+            left: -10px;
+            right: auto;
+        }
+
+        .dock-add-item {
+            padding: 0;
+            border: 0;
+            background: none;
+            appearance: none;
+            -webkit-appearance: none;
+        }
+
+        .dock-add-item .ios-icon {
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.05));
+            border: 1px dashed rgba(255, 255, 255, 0.28);
+            box-shadow: 0 12px 26px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
+        }
+
+        .dock-add-item:hover .ios-icon,
+        .dock-add-item:focus-visible .ios-icon {
+            border-color: var(--accent-soft-strong);
+            box-shadow: 0 16px 30px rgba(0, 0, 0, 0.26), 0 0 0 1px var(--accent-soft-strong);
+        }
+
+        .dock-add-icon svg {
+            width: calc(var(--icon-size) * 0.32);
+            height: calc(var(--icon-size) * 0.32);
+            stroke: rgba(255, 255, 255, 0.94);
+            fill: none;
+            stroke-width: 1.85;
+            stroke-linecap: round;
+        }
+
+        .bookmark-modal-backdrop {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at top, rgba(60, 86, 130, 0.18), transparent 42%), rgba(5, 8, 16, 0.5);
+            backdrop-filter: blur(calc(var(--glass-blur) + 2px)) saturate(140%);
+            -webkit-backdrop-filter: blur(calc(var(--glass-blur) + 2px)) saturate(140%);
+            animation: fadeIn 0.18s ease-out;
+        }
+
+        .bookmark-modal-shell {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+
+        .bookmark-modal {
+            position: relative;
+            width: min(100%, 460px);
+            padding: 26px;
+            border-radius: 28px;
+            background: linear-gradient(180deg, rgba(34, 40, 58, 0.88), rgba(18, 21, 34, 0.9));
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            box-shadow: 0 28px 80px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(calc(var(--glass-blur) + 12px)) saturate(145%);
+            -webkit-backdrop-filter: blur(calc(var(--glass-blur) + 12px)) saturate(145%);
+            animation: bookmarkModalIn 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .bookmark-modal.danger {
+            width: min(100%, 400px);
+            text-align: center;
+        }
+
+        .bookmark-modal-close {
+            position: absolute;
+            top: 14px;
+            right: 14px;
+            width: 34px;
+            height: 34px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(calc(var(--glass-blur) * 0.75)) saturate(130%);
+            -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.75)) saturate(130%);
+            color: rgba(255, 255, 255, 0.82);
+            font-size: 20px;
+            line-height: 1;
+            cursor: pointer;
+            transition: 0.2s ease;
+        }
+
+        .bookmark-modal-close:hover {
+            background: rgba(255, 255, 255, 0.14);
+            color: #fff;
+        }
+
+        .bookmark-modal-close:focus-visible,
+        .bookmark-switch-btn:focus-visible,
+        .bookmark-primary-btn:focus-visible,
+        .bookmark-secondary-btn:focus-visible,
+        .bookmark-danger-btn:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.32), 0 12px 32px rgba(0, 0, 0, 0.26);
+        }
+
+        .bookmark-modal-eyebrow {
+            font-size: 11px;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: rgba(183, 206, 255, 0.72);
+            margin-bottom: 12px;
+        }
+
+        .bookmark-modal-title {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .bookmark-modal-subtitle,
+        .bookmark-modal-copy {
+            margin: 10px 0 0;
+            color: rgba(255, 255, 255, 0.68);
+            line-height: 1.55;
+            word-break: break-word;
+        }
+
+        .bookmark-modal-switcher {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .bookmark-modal-form {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            margin-top: 18px;
+        }
+
+        .bookmark-switch-btn,
+        .bookmark-primary-btn,
+        .bookmark-secondary-btn,
+        .bookmark-danger-btn {
+            min-height: 40px;
+            padding: 0 16px;
+            border-radius: calc(var(--glass-radius) + 999px);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            font-size: 13px;
+            line-height: 1;
+            cursor: pointer;
+            transition: 0.2s ease;
+        }
+
+        .bookmark-switch-btn,
+        .bookmark-secondary-btn {
+            background: rgba(255, 255, 255, 0.08);
+            color: rgba(255, 255, 255, 0.92);
+        }
+
+        .bookmark-switch-btn:hover,
+        .bookmark-secondary-btn:hover {
+            background: rgba(255, 255, 255, 0.14);
+            color: #fff;
+        }
+
+        .bookmark-switch-btn.active {
+            background: var(--accent-soft);
+            border-color: var(--accent-soft-strong);
+            color: #dcebff;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        }
+
+        .bookmark-form-label {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.74);
+        }
+
+        .bookmark-form-input {
+            width: 100%;
+            min-height: 44px;
+            padding: 11px 14px;
+            border-radius: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: rgba(9, 12, 20, 0.42);
+            color: #fff;
+            font-size: 14px;
+            box-sizing: border-box;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+        }
+
+        .bookmark-form-input:focus {
+            outline: none;
+            border-color: var(--accent-soft-strong);
+            box-shadow: 0 0 0 1px var(--accent-soft), 0 10px 24px rgba(7, 12, 24, 0.24);
+        }
+
+        .bookmark-form-error {
+            min-height: 18px;
+            font-size: 12px;
+            color: #ffb6b6;
+        }
+
+        .bookmark-form-error[hidden] {
+            display: none;
+        }
+
+        .bookmark-icon-preview {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .bookmark-icon-preview-tile {
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.14);
+            overflow: hidden;
+            flex: 0 0 44px;
+        }
+
+        .bookmark-icon-preview-tile img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .bookmark-icon-preview-copy {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.72);
+        }
+
+        .bookmark-icon-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .bookmark-icon-upload {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+        }
+
+        .bookmark-icon-upload.is-disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .bookmark-modal-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .bookmark-modal-footer-actions,
+        .bookmark-confirm-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .bookmark-confirm-actions {
+            justify-content: center;
+            margin-top: 24px;
+        }
+
+        .bookmark-modal-spacer {
+            flex: 1;
+        }
+
+        .bookmark-primary-btn {
+            background: linear-gradient(135deg, var(--accent-color), var(--accent-surface-strong));
+            border-color: rgba(255, 255, 255, 0.2);
+            color: #fff;
+            box-shadow: 0 12px 24px var(--accent-soft-strong);
+        }
+
+        .bookmark-primary-btn:hover {
+            filter: brightness(1.06);
+            transform: translateY(-1px);
+        }
+
+        .bookmark-danger-btn {
+            background: linear-gradient(135deg, rgba(171, 67, 67, 0.26), rgba(112, 24, 36, 0.42));
+            border-color: rgba(255, 129, 129, 0.22);
+            color: #ffd1d1;
+        }
+
+        .bookmark-danger-btn:hover {
+            background: linear-gradient(135deg, rgba(192, 72, 72, 0.32), rgba(130, 26, 39, 0.52));
+            color: #fff2f2;
+        }
+
+        .bookmark-modal-icon {
+            width: 58px;
+            height: 58px;
+            margin: 0 auto 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: calc(var(--glass-radius) + 2px);
+            font-size: 22px;
+            font-weight: 700;
+            color: #ffe4e4;
+            background: linear-gradient(180deg, rgba(164, 61, 61, 0.34), rgba(109, 24, 36, 0.46));
+            border: 1px solid rgba(255, 178, 178, 0.18);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        }
+
+        .bookmark-switch-btn[disabled],
+        .bookmark-primary-btn[disabled],
+        .bookmark-secondary-btn[disabled],
+        .bookmark-danger-btn[disabled] {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        @keyframes bookmarkModalIn {
+            from {
+                opacity: 0;
+                transform: translateY(16px) scale(0.96);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
         }
 
         .breadcrumb-item {
@@ -715,7 +1187,9 @@
             min-height: 0;
             max-height: 100%;
             overflow-y: auto;
-            padding: 10px 20px 120px 20px;
+            width: 100%;
+            max-width: var(--content-max-width);
+            padding: 10px 10px 120px 10px;
             scrollbar-width: none;
             contain: layout paint;
             content-visibility: auto;
@@ -730,7 +1204,7 @@
         .grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(var(--grid-min-width), 1fr));
-            gap: var(--grid-gap);
+            gap: clamp(16px, 2vw, var(--grid-gap));
             padding-top: 5px;
             contain: layout paint;
         }
@@ -740,11 +1214,11 @@
             flex-direction: column;
             align-items: center;
             padding: 8px;
-            border-radius: 16px;
+            border-radius: var(--card-radius);
             cursor: pointer;
             text-decoration: none;
             color: white;
-            transition: background 0.2s;
+            transition: transform 0.22s ease, opacity 0.2s ease;
             content-visibility: auto;
             contain-intrinsic-size: 140px 140px;
             position: relative;
@@ -752,7 +1226,7 @@
         }
 
         .card:hover {
-            background: rgba(255, 255, 255, 0.1);
+            background: transparent;
         }
 
         .card:active {
@@ -785,7 +1259,7 @@
             content: '';
             position: absolute;
             inset: -6px;
-            border-radius: 18px;
+            border-radius: calc(var(--card-radius) + 2px);
             background: rgba(255, 255, 255, 0.08);
             border: 1px solid rgba(255, 255, 255, 0.28);
             box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
@@ -806,20 +1280,23 @@
         .card-title {
             font-size: var(--card-font-size);
             text-align: center;
-            width: 120%;
+            width: 100%;
+            max-width: 120px;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
-            text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4), 0 2px 10px rgba(0, 0, 0, 0.2);
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.32);
             opacity: 0.95;
             letter-spacing: 0.2px;
+            font-weight: 500;
+            transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1), text-shadow 0.22s ease, opacity 0.22s ease;
         }
 
         .ios-icon {
             width: var(--icon-size);
             height: var(--icon-size);
             background: #fff;
-            border-radius: 22.5%;
+            border-radius: calc(var(--card-radius) + 4px);
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15), inset 0 0 0 1px rgba(0, 0, 0, 0.06);
             margin-bottom: 8px;
             position: relative;
@@ -835,8 +1312,14 @@
 
         .card:hover .ios-icon,
         .dock-item:hover .ios-icon {
-            transform: translateY(-3px);
+            transform: translateY(calc(var(--bookmark-hover-lift) * -1)) scale(var(--bookmark-hover-scale));
             box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+        }
+
+        .card:hover .card-title {
+            transform: translateY(calc(var(--bookmark-hover-lift) * -0.45));
+            opacity: 1;
+            text-shadow: 0 4px 12px rgba(0, 0, 0, 0.42), 0 10px 28px rgba(0, 0, 0, 0.22);
         }
 
         .card-icon,
@@ -848,7 +1331,7 @@
             opacity: 0;
             transform: scale(calc(var(--icon-inner-scale) * 0.8));
             transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-            border-radius: 22.5%;
+            border-radius: calc(var(--card-radius) + 4px);
         }
 
         .card-icon.loaded,
@@ -857,23 +1340,64 @@
             transform: scale(var(--icon-inner-scale));
         }
 
+        .custom-folder-icon {
+            opacity: 1;
+            transform: scale(var(--icon-inner-scale));
+            object-fit: cover;
+        }
+
         .folder-icon {
-            background: rgba(255, 255, 255, 0.25);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.2), rgba(186, 214, 255, 0.08));
+            backdrop-filter: blur(calc(var(--glass-blur) + 4px));
+            border: 1px solid rgba(255, 255, 255, 0.24);
+            box-shadow: 0 14px 28px rgba(15, 22, 40, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.16);
+        }
+
+        .folder-icon.has-custom-icon::before,
+        .folder-icon.has-custom-icon::after {
+            display: none;
+        }
+
+        .folder-icon::before,
+        .folder-icon::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            pointer-events: none;
+        }
+
+        .folder-icon::before {
+            top: 18%;
+            width: calc(var(--icon-size) * 0.56);
+            height: calc(var(--icon-size) * 0.18);
+            border-radius: calc(var(--card-radius) * 0.72) calc(var(--card-radius) * 0.72) calc(var(--card-radius) * 0.3) calc(var(--card-radius) * 0.3);
+            background: linear-gradient(180deg, rgba(244, 248, 255, 0.92), rgba(208, 225, 255, 0.72));
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
+        }
+
+        .folder-icon::after {
+            top: 36%;
+            width: calc(var(--icon-size) * 0.8);
+            height: calc(var(--icon-size) * 0.5);
+            border-radius: calc(var(--card-radius) * 0.95);
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(214, 229, 255, 0.78));
+            border: 1px solid rgba(194, 216, 255, 0.72);
+            box-shadow: 0 8px 18px rgba(76, 103, 153, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.6);
         }
 
         .folder-emoji {
-            font-size: var(--icon-size);
-            filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.2));
             opacity: 0;
-            transform: scale(calc(var(--icon-inner-scale) * 0.8));
-            transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            font-size: 0;
+            width: 0;
+            height: 0;
+            overflow: hidden;
+            transform: none;
         }
 
         .folder-emoji.loaded {
-            opacity: 1;
-            transform: scale(var(--icon-inner-scale));
+            opacity: 0;
+            transform: none;
         }
 
         .letter-avatar {
@@ -966,10 +1490,18 @@
             animation: spin-cw 0.75s linear infinite;
         }
 
+        .bg-refresh-btn.bg-loading {
+            border-color: var(--accent-soft-strong);
+            color: var(--accent-surface-strong);
+            background: var(--accent-soft);
+            box-shadow: 0 12px 26px var(--accent-soft);
+        }
+
         .bg-refresh-btn.bg-success {
-            border-color: rgba(52, 199, 89, 0.55);
-            color: #b9f3c1;
-            background: rgba(52, 199, 89, 0.14);
+            border-color: var(--accent-soft-strong);
+            color: var(--accent-surface-strong);
+            background: var(--accent-soft);
+            box-shadow: 0 12px 26px var(--accent-soft);
         }
 
         .bg-refresh-btn.bg-error {
@@ -1003,7 +1535,7 @@
         }
 
         .action-toast.success {
-            color: #b9f3c1;
+            color: var(--accent-surface-strong);
         }
 
         .action-toast.error {
@@ -1024,10 +1556,18 @@
             animation: spin-cw 0.75s linear infinite;
         }
 
+        .sync-btn.syncing {
+            border-color: var(--accent-soft-strong);
+            color: var(--accent-surface-strong);
+            background: var(--accent-soft);
+            box-shadow: 0 10px 22px var(--accent-soft);
+        }
+
         .sync-btn.sync-success {
-            border-color: rgba(52, 199, 89, 0.55);
-            color: #b9f3c1;
-            background: rgba(52, 199, 89, 0.14);
+            border-color: var(--accent-soft-strong);
+            color: var(--accent-surface-strong);
+            background: var(--accent-soft);
+            box-shadow: 0 10px 22px var(--accent-soft);
         }
 
         .sync-btn.sync-error {
@@ -1043,8 +1583,8 @@
             width: 760px;
             height: 100%;
             background: linear-gradient(135deg, rgba(30, 30, 34, 0.55), rgba(20, 20, 24, 0.85));
-            backdrop-filter: blur(36px) saturate(160%);
-            -webkit-backdrop-filter: blur(36px) saturate(160%);
+            backdrop-filter: blur(calc(var(--glass-blur) + 20px)) saturate(160%);
+            -webkit-backdrop-filter: blur(calc(var(--glass-blur) + 20px)) saturate(160%);
             border-left: 1px solid rgba(255, 255, 255, 0.14);
             box-shadow: -20px 0 50px rgba(0, 0, 0, 0.55);
             z-index: 1000;
@@ -1100,6 +1640,8 @@
             align-items: center;
             font-weight: 600;
             background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(calc(var(--glass-blur) * 0.75)) saturate(130%);
+            -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.75)) saturate(130%);
         }
 
         .close-sidebar-btn {
@@ -1136,16 +1678,19 @@
             justify-content: flex-end;
             gap: 12px;
             background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(calc(var(--glass-blur) * 0.75)) saturate(130%);
+            -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.75)) saturate(130%);
         }
 
         .setting-group {
             margin-bottom: 24px;
             background: rgba(255, 255, 255, 0.06);
             padding: 16px;
-            border-radius: 14px;
+            border-radius: var(--glass-radius);
             border: 1px solid rgba(255, 255, 255, 0.1);
             box-shadow: 0 8px 22px rgba(0, 0, 0, 0.25);
-            /* backdrop-filter removed: sidebar already has blur(36px), nested backdrop-filter is wasteful */
+            backdrop-filter: blur(calc(var(--glass-blur) * 0.8)) saturate(125%);
+            -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.8)) saturate(125%);
         }
 
         .setting-label {
@@ -1162,16 +1707,89 @@
 
         .range-container {
             display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+
+        .range-meta {
+            display: flex;
             align-items: center;
+            justify-content: space-between;
             gap: 12px;
-            margin-bottom: 16px;
         }
 
         .range-label {
             font-size: 14px;
-            width: 40px;
             color: #fff;
             font-weight: 500;
+        }
+
+        .range-value {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.72);
+            padding: 4px 8px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            min-width: 56px;
+            text-align: center;
+        }
+
+        .appearance-presets,
+        .appearance-section {
+            padding: 14px;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .appearance-presets {
+            margin-bottom: 14px;
+        }
+
+        .appearance-section + .appearance-section {
+            margin-top: 12px;
+        }
+
+        .appearance-section-title {
+            margin-bottom: 12px;
+            font-size: 12px;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: rgba(190, 211, 255, 0.72);
+            font-weight: 600;
+        }
+
+        .appearance-preset-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .appearance-preset-btn {
+            min-height: 38px;
+            padding: 0 12px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+            font-size: 13px;
+            cursor: pointer;
+            transition: 0.2s ease;
+        }
+
+        .appearance-preset-btn:hover {
+            background: var(--accent-soft);
+            border-color: var(--accent-soft-strong);
+            transform: translateY(-1px);
+        }
+
+        .appearance-preset-btn.active {
+            background: linear-gradient(135deg, var(--accent-color), var(--accent-surface-strong));
+            border-color: var(--accent-soft-strong);
+            box-shadow: 0 10px 22px var(--accent-soft-strong);
         }
 
         input[type=range] {
@@ -1194,8 +1812,8 @@
             height: 20px;
             width: 20px;
             border-radius: 50%;
-            background: #fff;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+            background: var(--accent-color);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3), 0 0 0 3px rgba(255, 255, 255, 0.08);
             -webkit-appearance: none;
             margin-top: -8px;
         }
@@ -1217,10 +1835,10 @@
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, rgba(10, 132, 255, 0.85), rgba(72, 166, 255, 0.85));
+            background: linear-gradient(135deg, var(--accent-color), var(--accent-surface-strong));
             color: white;
             border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 10px 24px rgba(10, 132, 255, 0.35);
+            box-shadow: 0 10px 24px var(--accent-soft-strong);
         }
 
         .btn-secondary {
@@ -1268,8 +1886,8 @@
             background: rgba(255, 255, 255, 0.08);
             color: #fff;
             cursor: pointer;
-            backdrop-filter: blur(12px) saturate(140%);
-            -webkit-backdrop-filter: blur(12px) saturate(140%);
+            backdrop-filter: blur(calc(var(--glass-blur) - 2px)) saturate(140%);
+            -webkit-backdrop-filter: blur(calc(var(--glass-blur) - 2px)) saturate(140%);
             box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25), inset 0 0 0 1px rgba(255, 255, 255, 0.02);
             transition: transform 0.12s, background 0.12s;
             font-weight: 600;
@@ -1348,15 +1966,15 @@
         }
 
         .bg-status.loading {
-            background: rgba(10, 132, 255, 0.1);
-            border-color: rgba(10, 132, 255, 0.25);
-            color: #8ab4f8;
+            background: var(--accent-soft);
+            border-color: var(--accent-soft-strong);
+            color: var(--accent-surface-strong);
         }
 
         .bg-status.success {
-            background: rgba(52, 199, 89, 0.12);
-            border-color: rgba(52, 199, 89, 0.3);
-            color: #b9f3c1;
+            background: var(--accent-soft);
+            border-color: var(--accent-soft-strong);
+            color: var(--accent-surface-strong);
         }
 
         .bg-status.error {
@@ -1366,10 +1984,10 @@
         }
 
         input[type="radio"]:checked+.engine-option-label {
-            background: rgba(10, 132, 255, 0.7);
+            background: var(--accent-surface);
             color: white;
-            border-color: rgba(10, 132, 255, 0.6);
-            box-shadow: 0 10px 22px rgba(10, 132, 255, 0.35);
+            border-color: var(--accent-soft-strong);
+            box-shadow: 0 10px 22px var(--accent-soft-strong);
         }
 
         input[type="radio"] {
@@ -1489,7 +2107,7 @@
             justify-content: center;
             font-size: 18px;
             margin-bottom: 8px;
-            backdrop-filter: blur(14px) saturate(140%);
+            backdrop-filter: blur(calc(var(--glass-blur) - 2px)) saturate(140%);
         }
 
         @keyframes fadeInDown {
@@ -1527,6 +2145,11 @@
         }
 
         @media (max-width: 600px) {
+            :root {
+                --hero-width: 100%;
+                --content-max-width: 100%;
+            }
+
             .settings-sidebar {
                 width: 100%;
                 border-left: none;
@@ -1543,6 +2166,37 @@
 
             :root {
                 --icon-size: 54px;
+            }
+
+            .bookmark-modal-shell {
+                padding: 16px;
+            }
+
+            .bookmark-modal {
+                padding: 22px 18px 18px;
+                border-radius: 24px;
+            }
+
+            .bookmark-modal-footer,
+            .bookmark-confirm-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .bookmark-modal-footer-actions {
+                width: 100%;
+            }
+
+            .bookmark-modal-footer-actions button,
+            .bookmark-confirm-actions button,
+            .bookmark-danger-btn,
+            .bookmark-primary-btn,
+            .bookmark-secondary-btn {
+                width: 100%;
+            }
+
+            .appearance-preset-grid {
+                grid-template-columns: 1fr;
             }
         }
 
@@ -1615,6 +2269,20 @@
             <div class="workspace-header">
                 <div class="breadcrumb-bar">
                     <div class="breadcrumb" id="breadcrumb" role="navigation" aria-label="Breadcrumb"></div>
+                    <button class="sync-btn" id="btnEditBookmarks" aria-label="Toggle bookmark editing" type="button">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M12 20h9" />
+                            <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+                        </svg>
+                        <span>Edit</span>
+                    </button>
+                    <button class="sync-btn" id="btnAddBookmark" aria-label="Create bookmark" type="button" hidden>
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M12 5v14" />
+                            <path d="M5 12h14" />
+                        </svg>
+                        <span>Add</span>
+                    </button>
                     <button class="sync-btn" id="btnSyncBookmarks" aria-label="Sync bookmarks" type="button">
                         <svg viewBox="0 0 24 24" aria-hidden="true">
                             <path d="M3 12a8 8 0 0 1 13.66-5.66" />
@@ -1640,6 +2308,8 @@
             </div>
         </div>
     </div>
+
+    <div id="bookmarkModalRoot" hidden></div>
 
     <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
     <div class="settings-sidebar" id="settingsSidebar">
@@ -1677,12 +2347,6 @@
                 </label>
                 <button class="btn btn-secondary" style="width:100%; margin-top:8px; font-size:13px;"
                     id="btnClearHistory">清空搜索历史</button>
-            </div>
-            <div class="setting-group">
-                <label class="setting-label" id="labelDock">⚓ Dock 栏图标</label>
-                <div id="quickLinksEditor"></div>
-                <button class="btn btn-secondary" style="width:100%; margin-top:5px; font-size:13px;"
-                    id="btnAddLinkRow">+ 添加一行</button>
             </div>
             <div class="setting-group">
                 <label class="setting-label" id="labelImportBookmarks">📂 导入书签 HTML</label>

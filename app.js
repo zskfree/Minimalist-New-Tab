@@ -26,13 +26,34 @@ const Config = {
         { title: "ChatGPT", url: "https://chat.openai.com", icon: "assets/chatgpt.png" }
     ],
     STYLES: [
-        { id: 'bgBlur', labelKey: 'style.bgBlur', min: 0, max: 30 },
-        { id: 'bgOverlay', labelKey: 'style.bgOverlay', min: 0, max: 80 },
-        { id: 'iconSize', labelKey: 'style.iconSize', min: 40, max: 80 },
-        { id: 'innerScale', labelKey: 'style.innerScale', min: 30, max: 100 },
-        { id: 'gridGap', labelKey: 'style.gridGap', min: 10, max: 60 },
-        { id: 'fontSize', labelKey: 'style.fontSize', min: 10, max: 20 }
-    ]
+        { id: 'iconSize', group: 'layout', labelKey: 'style.iconSize', min: 40, max: 90, unit: 'px' },
+        { id: 'innerScale', group: 'layout', labelKey: 'style.innerScale', min: 45, max: 100, unit: '%' },
+        { id: 'fontSize', group: 'layout', labelKey: 'style.fontSize', min: 10, max: 20, unit: 'px' },
+        { id: 'gridGap', group: 'layout', labelKey: 'style.gridGap', min: 8, max: 64, unit: 'px' },
+        { id: 'sidebarWidth', group: 'layout', labelKey: 'style.sidebarWidth', min: 520, max: 1100, step: 10, unit: 'px' },
+        { id: 'bookmarkHoverLift', group: 'motion', labelKey: 'style.bookmarkHoverLift', min: 2, max: 16, unit: 'px' },
+        { id: 'bookmarkHoverScale', group: 'motion', labelKey: 'style.bookmarkHoverScale', min: 100, max: 132, unit: '%' },
+        { id: 'glassBlur', group: 'glass', labelKey: 'style.glassBlur', min: 8, max: 36, unit: 'px' },
+        { id: 'glassRadius', group: 'glass', labelKey: 'style.glassRadius', min: 10, max: 28, unit: 'px' },
+        { id: 'cardRadius', group: 'glass', labelKey: 'style.cardRadius', min: 10, max: 28, unit: 'px' },
+        { id: 'bgBlur', group: 'background', labelKey: 'style.bgBlur', min: 0, max: 30, unit: 'px' },
+        { id: 'bgOverlay', group: 'background', labelKey: 'style.bgOverlay', min: 0, max: 80, unit: '%' },
+        { id: 'accentHue', group: 'color', labelKey: 'style.accentHue', min: 0, max: 360, unit: '°' },
+        { id: 'accentSaturation', group: 'color', labelKey: 'style.accentSaturation', min: 40, max: 100, unit: '%' },
+        { id: 'accentLightness', group: 'color', labelKey: 'style.accentLightness', min: 40, max: 70, unit: '%' }
+    ],
+    STYLE_GROUPS: [
+        { id: 'layout', titleKey: 'appearance.layout' },
+        { id: 'motion', titleKey: 'appearance.motion' },
+        { id: 'glass', titleKey: 'appearance.glass' },
+        { id: 'background', titleKey: 'appearance.background' },
+        { id: 'color', titleKey: 'appearance.color' }
+    ],
+    STYLE_PRESETS: {
+        balanced: { iconSize: 56, innerScale: 78, fontSize: 13, gridGap: 20, sidebarWidth: 820, bookmarkHoverLift: 4, bookmarkHoverScale: 106, glassBlur: 18, glassRadius: 18, cardRadius: 15, bgBlur: 2, bgOverlay: 28, accentHue: 210, accentSaturation: 92, accentLightness: 56 },
+        compact: { iconSize: 48, innerScale: 84, fontSize: 12, gridGap: 16, sidebarWidth: 700, bookmarkHoverLift: 3, bookmarkHoverScale: 104, glassBlur: 12, glassRadius: 14, cardRadius: 12, bgBlur: 1, bgOverlay: 24, accentHue: 212, accentSaturation: 88, accentLightness: 54 },
+        immersive: { iconSize: 60, innerScale: 76, fontSize: 14, gridGap: 24, sidebarWidth: 900, bookmarkHoverLift: 5, bookmarkHoverScale: 108, glassBlur: 22, glassRadius: 20, cardRadius: 17, bgBlur: 4, bgOverlay: 32, accentHue: 204, accentSaturation: 86, accentLightness: 58 }
+    }
 };
 
 const I18N = {
@@ -193,6 +214,160 @@ const I18N = {
     }
 };
 
+Object.assign(I18N.zh, {
+    btnEditBookmarks: '\u7f16\u8f91',
+    btnDoneEditing: '\u5b8c\u6210',
+    btnAddBookmark: '\u65b0\u589e',
+    bookmarkEditAction: '\u7f16\u8f91',
+    bookmarkDeleteAction: '\u5220\u9664',
+    bookmarkCreateLink: '\u65b0\u5efa\u4e66\u7b7e',
+    bookmarkCreateFolder: '\u65b0\u5efa\u6587\u4ef6\u5939',
+    bookmarkEditHeading: '\u7f16\u8f91\u4e66\u7b7e',
+    bookmarkCreateHeading: '\u65b0\u5efa\u5230\u5f53\u524d\u6587\u4ef6\u5939',
+    bookmarkErrorTitleRequired: '\u540d\u79f0\u4e0d\u80fd\u4e3a\u7a7a',
+    bookmarkErrorUrlInvalid: 'URL \u683c\u5f0f\u65e0\u6548\uff0c\u9700\u4ee5 http:// \u6216 https:// \u5f00\u5934',
+    bookmarkEditUnavailable: '\u4ec5\u6269\u5c55\u6a21\u5f0f\u53ef\u7f16\u8f91\u4e66\u7b7e',
+    bookmarkEditExitSearch: '\u8bf7\u5148\u9000\u51fa\u4e66\u7b7e\u641c\u7d22\u518d\u8fdb\u5165\u7f16\u8f91',
+    bookmarkCreateUnavailable: '\u8bf7\u5148\u8fdb\u5165\u4e00\u4e2a\u6587\u4ef6\u5939\u518d\u65b0\u589e',
+    bookmarkSaveSuccess: '\u4e66\u7b7e\u5df2\u66f4\u65b0',
+    bookmarkSaveFailed: '\u66f4\u65b0\u4e66\u7b7e\u5931\u8d25',
+    bookmarkCreateSuccess: '\u5df2\u65b0\u5efa\u4e66\u7b7e',
+    bookmarkCreateFailed: '\u65b0\u5efa\u4e66\u7b7e\u5931\u8d25',
+    bookmarkDeleteSuccess: '\u5df2\u5220\u9664\u4e66\u7b7e',
+    bookmarkDeleteFailed: '\u5220\u9664\u4e66\u7b7e\u5931\u8d25',
+    bookmarkDeleteConfirm: '\u786e\u5b9a\u8981\u5220\u9664\u201c{title}\u201d\u5417\uff1f\u6b64\u64cd\u4f5c\u4e0d\u53ef\u64a4\u9500\u3002',
+    bookmarkErrorIconInvalid: '\u56fe\u6807\u94fe\u63a5\u65e0\u6548\uff0c\u8bf7\u4f7f\u7528 https:// \u6216\u4e0a\u4f20\u672c\u5730\u56fe\u7247',
+    bookmarkUploadIcon: '\u4e0a\u4f20\u56fe\u6807',
+    bookmarkClearIcon: '\u6e05\u9664\u56fe\u6807',
+    bookmarkIconSelected: '\u5df2\u9009\u62e9\u81ea\u5b9a\u4e49\u56fe\u6807',
+    dockCreateAction: '\u65b0\u589e\u5bfc\u822a',
+    dockEditHeading: '\u7f16\u8f91\u5e95\u90e8\u5bfc\u822a',
+    dockCreateHeading: '\u65b0\u589e\u5e95\u90e8\u5bfc\u822a',
+    dockCreateHint: '\u8bbe\u7f6e\u5e95\u90e8\u5feb\u6377\u5bfc\u822a\u94fe\u63a5\u4e0e\u56fe\u6807',
+    dockSaveSuccess: '\u5e95\u90e8\u5bfc\u822a\u5df2\u66f4\u65b0',
+    dockSaveFailed: '\u66f4\u65b0\u5e95\u90e8\u5bfc\u822a\u5931\u8d25',
+    dockCreateSuccess: '\u5e95\u90e8\u5bfc\u822a\u5df2\u65b0\u589e',
+    dockCreateFailed: '\u65b0\u589e\u5e95\u90e8\u5bfc\u822a\u5931\u8d25',
+    dockDeleteSuccess: '\u5e95\u90e8\u5bfc\u822a\u5df2\u5220\u9664',
+    dockDeleteFailed: '\u5220\u9664\u5e95\u90e8\u5bfc\u822a\u5931\u8d25',
+    dockDeleteConfirm: '\u786e\u5b9a\u8981\u5220\u9664\u201c{title}\u201d\u5417\uff1f\u6b64\u64cd\u4f5c\u4e0d\u53ef\u64a4\u9500\u3002',
+    appearance: {
+        layout: '\u5e03\u5c40',
+        motion: '\u52a8\u6548',
+        glass: '\u73bb\u7483\u8d28\u611f',
+        background: '\u80cc\u666f',
+        color: '\u914d\u8272',
+        presets: '\u5feb\u901f\u9884\u8bbe',
+        presetBalanced: '\u5747\u8861',
+        presetCompact: '\u7d27\u51d1',
+        presetImmersive: '\u6c89\u6d78'
+    },
+    style: {
+        sidebarWidth: '\u4fa7\u680f',
+        glassBlur: '\u9762\u677f\u6a21\u7cca',
+        glassRadius: '\u9762\u677f\u5706\u89d2',
+        cardRadius: '\u5361\u7247\u5706\u89d2',
+        accentHue: '\u8272\u76f8',
+        accentSaturation: '\u9971\u548c',
+        accentLightness: '\u4eae\u5ea6'
+    }
+});
+
+Object.assign(I18N.en, {
+    btnEditBookmarks: 'Edit',
+    btnDoneEditing: 'Done',
+    btnAddBookmark: 'Add',
+    bookmarkEditAction: 'Edit',
+    bookmarkDeleteAction: 'Delete',
+    bookmarkCreateLink: 'New Bookmark',
+    bookmarkCreateFolder: 'New Folder',
+    bookmarkEditHeading: 'Edit bookmark',
+    bookmarkCreateHeading: 'Create in current folder',
+    bookmarkErrorTitleRequired: 'Title cannot be empty',
+    bookmarkErrorUrlInvalid: 'Invalid URL format. Use http:// or https://',
+    bookmarkEditUnavailable: 'Edit only works in extension mode',
+    bookmarkEditExitSearch: 'Exit bookmark search before editing',
+    bookmarkCreateUnavailable: 'Open a folder before creating bookmarks',
+    bookmarkSaveSuccess: 'Bookmark updated',
+    bookmarkSaveFailed: 'Failed to update bookmark',
+    bookmarkCreateSuccess: 'Bookmark created',
+    bookmarkCreateFailed: 'Failed to create bookmark',
+    bookmarkDeleteSuccess: 'Bookmark deleted',
+    bookmarkDeleteFailed: 'Failed to delete bookmark',
+    bookmarkDeleteConfirm: 'Delete "{title}"? This action cannot be undone.',
+    bookmarkErrorIconInvalid: 'Invalid icon URL. Use https:// or upload a local image',
+    bookmarkUploadIcon: 'Upload Icon',
+    bookmarkClearIcon: 'Clear Icon',
+    bookmarkIconSelected: 'Custom icon selected',
+    dockCreateAction: 'Add Dock Link',
+    dockEditHeading: 'Edit dock link',
+    dockCreateHeading: 'Add dock link',
+    dockCreateHint: 'Set the dock shortcut title, URL and icon',
+    dockSaveSuccess: 'Dock link updated',
+    dockSaveFailed: 'Failed to update dock link',
+    dockCreateSuccess: 'Dock link added',
+    dockCreateFailed: 'Failed to add dock link',
+    dockDeleteSuccess: 'Dock link removed',
+    dockDeleteFailed: 'Failed to remove dock link',
+    dockDeleteConfirm: 'Delete "{title}" from the dock? This action cannot be undone.',
+    appearance: {
+        layout: 'Layout',
+        motion: 'Motion',
+        glass: 'Glass',
+        background: 'Background',
+        color: 'Color',
+        presets: 'Quick Presets',
+        presetBalanced: 'Balanced',
+        presetCompact: 'Compact',
+        presetImmersive: 'Immersive'
+    },
+    style: {
+        sidebarWidth: 'Sidebar',
+        glassBlur: 'Panel Blur',
+        glassRadius: 'Panel Radius',
+        cardRadius: 'Card Radius',
+        accentHue: 'Hue',
+        accentSaturation: 'Saturation',
+        accentLightness: 'Lightness'
+    }
+});
+
+Object.assign(I18N.zh.style, {
+    bgBlur: '\u6a21\u7cca',
+    bgOverlay: '\u6697\u5ea6',
+    iconSize: '\u5c3a\u5bf8',
+    innerScale: '\u586b\u5145',
+    gridGap: '\u95f4\u8ddd',
+    bookmarkHoverLift: '\u5f39\u8df3\u9ad8\u5ea6',
+    bookmarkHoverScale: '\u5f39\u8df3\u7f29\u653e',
+    fontSize: '\u5b57\u4f53',
+    sidebarWidth: '\u4fa7\u680f',
+    glassBlur: '\u9762\u677f\u6a21\u7cca',
+    glassRadius: '\u9762\u677f\u5706\u89d2',
+    cardRadius: '\u5361\u7247\u5706\u89d2',
+    accentHue: '\u8272\u76f8',
+    accentSaturation: '\u9971\u548c',
+    accentLightness: '\u4eae\u5ea6'
+});
+
+Object.assign(I18N.en.style, {
+    bgBlur: 'Blur',
+    bgOverlay: 'Overlay',
+    iconSize: 'Icon',
+    innerScale: 'Fill',
+    gridGap: 'Gap',
+    bookmarkHoverLift: 'Hover Lift',
+    bookmarkHoverScale: 'Hover Scale',
+    fontSize: 'Text',
+    sidebarWidth: 'Sidebar',
+    glassBlur: 'Panel Blur',
+    glassRadius: 'Panel Radius',
+    cardRadius: 'Card Radius',
+    accentHue: 'Hue',
+    accentSaturation: 'Saturation',
+    accentLightness: 'Lightness'
+});
+
 const t = (key, vars = {}) => {
     const lang = I18N[State.language] ? State.language : 'zh';
     const path = key.split('.');
@@ -208,18 +383,24 @@ const State = {
     quickLinks: [],
     currentFolderId: 'root',
     breadcrumbPath: [],
-    styles: { iconSize: 60, innerScale: 75, fontSize: 13, gridGap: 24, bgBlur: 0, bgOverlay: 20, sidebarWidth: 800 },
+    styles: { iconSize: 56, innerScale: 75, fontSize: 13, gridGap: 20, bgBlur: 0, bgOverlay: 28, sidebarWidth: 800, bookmarkHoverLift: 4, bookmarkHoverScale: 106, glassBlur: 18, glassRadius: 16, cardRadius: 15, accentHue: 210, accentSaturation: 100, accentLightness: 52 },
     bgConfig: { type: 'custom_zhimg-pica', value: 'https://pica.zhimg.com/v2-564f2c587f65e208a130242b34338872_1440w.jpg' },
     currentEngine: 'google',
     language: 'zh',
     customBgSources: [{ id: 'zhimg-pica', name: 'Zhimg Pica', url: 'https://pica.zhimg.com/v2-564f2c587f65e208a130242b34338872_1440w.jpg', random: false }],
+    bookmarkCustomIcons: {},
     tempBgValue: null,
     pendingImportData: null,
     isSearchMode: false,
     suggestions: [],
     selectedSuggestionIndex: -1,
     searchHistory: [],
-    searchHistoryEnabled: true
+    searchHistoryEnabled: true,
+    bookmarkEditor: {
+        enabled: false,
+        pending: false,
+        form: null
+    }
 };
 
 /** Module: Utilities */
@@ -454,6 +635,29 @@ const normalizeUrl = (url) => {
     }
 };
 
+const normalizeCustomIconUrl = (url) => {
+    if (!url) return '';
+    const raw = String(url).trim();
+    if (!raw) return '';
+    if (/^data:image\/[a-zA-Z0-9.+-]+;base64,/i.test(raw)) return raw;
+    return normalizeUrl(raw);
+};
+
+const applyBookmarkCustomIcons = (nodes, iconMap = State.bookmarkCustomIcons || {}) => (nodes || []).map((node) => {
+    const next = { ...node };
+    const customIcon = iconMap[next.id];
+    if (customIcon) next.icon = customIcon;
+    if (next.children) next.children = applyBookmarkCustomIcons(next.children, iconMap);
+    return next;
+});
+
+const collectBookmarkIds = (node, acc = []) => {
+    if (!node) return acc;
+    acc.push(node.id);
+    (node.children || []).forEach((child) => collectBookmarkIds(child, acc));
+    return acc;
+};
+
 const mapBookmarkNode = (node) => {
     if (node.url) return { id: node.id, type: 'link', title: node.title || node.url, url: node.url };
     return {
@@ -482,11 +686,775 @@ const fetchBookmarksFromChrome = () => new Promise((resolve, reject) => {
 
 const isSafeUrl = (url) => !!normalizeUrl(url);
 
+const callBookmarkApi = (invoke) => new Promise((resolve, reject) => {
+    if (!isExtensionContext() || !chrome.bookmarks) {
+        reject(new Error('unavailable'));
+        return;
+    }
+    try {
+        invoke((result) => {
+            const err = chrome.runtime && chrome.runtime.lastError;
+            if (err) {
+                reject(new Error(err.message || String(err)));
+                return;
+            }
+            resolve(result);
+        });
+    } catch (err) {
+        reject(err);
+    }
+});
+
+const refreshBookmarksState = async () => {
+    const bookmarks = await fetchBookmarksFromChrome();
+    State.bookmarks = applyBookmarkCustomIcons(bookmarks || []);
+    Storage.save();
+    return State.bookmarks;
+};
+
+const BookmarkEditor = {
+    getState: function () {
+        if (!State.bookmarkEditor) {
+            State.bookmarkEditor = { enabled: false, pending: false, form: null, confirmDelete: null };
+        }
+        if (!Object.prototype.hasOwnProperty.call(State.bookmarkEditor, 'confirmDelete')) {
+            State.bookmarkEditor.confirmDelete = null;
+        }
+        return State.bookmarkEditor;
+    },
+
+    isAvailable: function () {
+        return isExtensionContext() && !!(chrome && chrome.bookmarks);
+    },
+
+    isEnabled: function () {
+        return !!this.getState().enabled;
+    },
+
+    isPending: function () {
+        return !!this.getState().pending;
+    },
+
+    getForm: function () {
+        return this.getState().form;
+    },
+
+    getConfirmDelete: function () {
+        return this.getState().confirmDelete;
+    },
+
+    isDockForm: function (form = this.getForm()) {
+        return !!form && form.scope === 'dock';
+    },
+
+    getDockTargetId: function (index) {
+        const value = Number.parseInt(index, 10);
+        return Number.isInteger(value) && value >= 0 ? `dock:${value}` : '';
+    },
+
+    parseDockIndex: function (targetId) {
+        const match = /^dock:(\d+)$/.exec(String(targetId || ''));
+        if (!match) return -1;
+        return Number.parseInt(match[1], 10);
+    },
+
+    getQuickLinkByIndex: function (index) {
+        const value = Number.parseInt(index, 10);
+        if (!Number.isInteger(value) || value < 0) return null;
+        return State.quickLinks[value] || null;
+    },
+
+    getNodeById: function (id, nodes = State.bookmarks) {
+        for (const node of nodes || []) {
+            if (!node) continue;
+            if (node.id === id) return node;
+            if (node.children && node.children.length) {
+                const hit = this.getNodeById(id, node.children);
+                if (hit) return hit;
+            }
+        }
+        return null;
+    },
+
+    getCurrentFolderNode: function () {
+        if (State.currentFolderId === 'root') return null;
+        const path = UIManager.getFolderPath(State.currentFolderId);
+        return path.length ? path[path.length - 1] : null;
+    },
+
+    getResolvedFolderId: function () {
+        let targetId = State.currentFolderId || 'root';
+        if (targetId === 'root') {
+            return UIManager.getDefaultFolderId();
+        }
+        return UIManager.getFolderPath(targetId).length ? targetId : UIManager.getDefaultFolderId();
+    },
+
+    canCreateInCurrentFolder: function () {
+        return !!this.getCurrentFolderNode();
+    },
+
+    updateHeaderControls: function () {
+        const editBtn = $('btnEditBookmarks');
+        const addBtn = $('btnAddBookmark');
+        const available = this.isAvailable();
+        const enabled = this.isEnabled();
+        const pending = this.isPending();
+
+        if (editBtn) {
+            editBtn.hidden = !available;
+            editBtn.disabled = pending;
+            editBtn.classList.toggle('is-disabled', pending);
+            editBtn.setAttribute('aria-disabled', String(pending));
+            const span = editBtn.querySelector('span');
+            if (span) span.textContent = enabled ? t('btnDoneEditing') : t('btnEditBookmarks');
+        }
+
+        if (addBtn) {
+            const showAdd = available && enabled;
+            const addDisabled = pending || !this.canCreateInCurrentFolder();
+            addBtn.hidden = !showAdd;
+            addBtn.disabled = addDisabled;
+            addBtn.classList.toggle('is-disabled', addDisabled);
+            addBtn.setAttribute('aria-disabled', String(addDisabled));
+            const span = addBtn.querySelector('span');
+            if (span) span.textContent = t('btnAddBookmark');
+        }
+    },
+
+    setPending: function (pending) {
+        this.getState().pending = pending;
+        this.updateHeaderControls();
+        if (!State.isSearchMode && $('bookmarkGrid')) UIManager.enterFolder(State.currentFolderId);
+    },
+
+    focusPrimaryInput: function () {
+        setTimeout(() => {
+            const field = document.querySelector('[data-bookmark-input="title"]');
+            if (field) field.focus();
+        }, 0);
+    },
+
+    handleEscape: function () {
+        if (this.isPending()) return false;
+        if (this.getConfirmDelete()) {
+            this.closeDeleteConfirm();
+            return true;
+        }
+        if (this.getForm()) {
+            this.closeForm();
+            return true;
+        }
+        if (this.isEnabled()) {
+            this.exit();
+            return true;
+        }
+        return false;
+    },
+
+    async refreshAndRenderCurrentFolder() {
+        await refreshBookmarksState();
+        this.updateHeaderControls();
+        if (!State.bookmarks.length) {
+            State.currentFolderId = 'root';
+            State.breadcrumbPath = [{ id: 'root', title: t('home') }];
+            $('bookmarkGrid').innerHTML = `<div style="grid-column:1/-1;text-align:center;opacity:0.6;padding:60px;">${t('welcome')}</div>`;
+            $('breadcrumb').innerHTML = `<div class="breadcrumb-item">${t('home')}</div>`;
+            return;
+        }
+        const targetId = this.getResolvedFolderId();
+        UIManager.enterFolder(targetId);
+    },
+
+    async enter() {
+        if (this.isPending()) return;
+        if (!this.isAvailable()) {
+            showActionToast(t('bookmarkEditUnavailable'), 'error');
+            this.updateHeaderControls();
+            return;
+        }
+        if (State.isSearchMode) {
+            showActionToast(t('bookmarkEditExitSearch'), 'error');
+            return;
+        }
+
+        this.setPending(true);
+        try {
+            this.getState().enabled = true;
+            this.getState().form = null;
+            this.getState().confirmDelete = null;
+            this.updateModal();
+            await this.refreshAndRenderCurrentFolder();
+        } catch (err) {
+            this.getState().enabled = false;
+            showActionToast(t('syncFailed'), 'error');
+        } finally {
+            this.getState().pending = false;
+            this.updateHeaderControls();
+            this.updateModal();
+            UIManager.renderDock();
+            if (!State.isSearchMode && $('bookmarkGrid')) UIManager.enterFolder(State.currentFolderId);
+        }
+    },
+
+    exit: function () {
+        if (this.isPending()) return;
+        const state = this.getState();
+        state.enabled = false;
+        state.form = null;
+        state.confirmDelete = null;
+        this.updateHeaderControls();
+        this.updateModal();
+        UIManager.renderDock();
+        if (!State.isSearchMode && $('bookmarkGrid')) UIManager.enterFolder(State.currentFolderId);
+    },
+
+    toggle: function () {
+        if (this.isEnabled()) this.exit();
+        else this.enter();
+    },
+
+    updateModal: function () {
+        const root = $('bookmarkModalRoot');
+        if (!root) return;
+        const form = this.getForm();
+        const confirmDelete = this.getConfirmDelete();
+        const shouldShow = this.isEnabled() && (form || confirmDelete);
+
+        if (!shouldShow) {
+            root.hidden = true;
+            root.innerHTML = '';
+            document.body.classList.remove('bookmark-modal-open');
+            return;
+        }
+
+        root.hidden = false;
+        root.innerHTML = confirmDelete ? this.renderDeleteModal(confirmDelete) : this.renderFormModal(form);
+        document.body.classList.add('bookmark-modal-open');
+    },
+
+    openEdit: function (id) {
+        if (!this.isEnabled() || this.isPending()) return;
+        const node = this.getNodeById(id);
+        if (!node) return;
+        const state = this.getState();
+        state.confirmDelete = null;
+        state.form = {
+            scope: 'bookmark',
+            mode: node.type === 'folder' ? 'edit-folder' : 'edit-link',
+            targetId: node.id,
+            parentId: null,
+            title: node.title || '',
+            url: node.url || '',
+            icon: node.icon || '',
+            error: ''
+        };
+        this.updateModal();
+        this.focusPrimaryInput();
+    },
+
+    openCreate: function (kind = 'link') {
+        if (!this.isEnabled() || this.isPending()) return;
+        if (!this.canCreateInCurrentFolder()) {
+            showActionToast(t('bookmarkCreateUnavailable'), 'error');
+            this.updateHeaderControls();
+            return;
+        }
+        const parent = this.getCurrentFolderNode();
+        const state = this.getState();
+        state.confirmDelete = null;
+        state.form = {
+            scope: 'bookmark',
+            mode: kind === 'folder' ? 'create-folder' : 'create-link',
+            targetId: null,
+            parentId: parent.id,
+            title: '',
+            url: '',
+            icon: '',
+            error: ''
+        };
+        this.updateModal();
+        this.focusPrimaryInput();
+    },
+
+    openDockEdit: function (index) {
+        if (!this.isEnabled() || this.isPending()) return;
+        const quickLink = this.getQuickLinkByIndex(index);
+        if (!quickLink) return;
+        const state = this.getState();
+        state.confirmDelete = null;
+        state.form = {
+            scope: 'dock',
+            mode: 'edit-dock-link',
+            targetId: this.getDockTargetId(index),
+            quickLinkIndex: Number.parseInt(index, 10),
+            parentId: null,
+            title: quickLink.title || '',
+            url: quickLink.url || '',
+            icon: quickLink.icon || '',
+            error: ''
+        };
+        this.updateModal();
+        this.focusPrimaryInput();
+    },
+
+    openDockCreate: function () {
+        if (!this.isEnabled() || this.isPending()) return;
+        const state = this.getState();
+        state.confirmDelete = null;
+        state.form = {
+            scope: 'dock',
+            mode: 'create-dock-link',
+            targetId: null,
+            quickLinkIndex: null,
+            parentId: null,
+            title: '',
+            url: '',
+            icon: '',
+            error: ''
+        };
+        this.updateModal();
+        this.focusPrimaryInput();
+    },
+
+    switchCreateMode: function (mode) {
+        const form = this.getForm();
+        if (!form || form.targetId !== null) return;
+        if (this.isDockForm(form)) return;
+        form.mode = mode === 'create-folder' ? 'create-folder' : 'create-link';
+        form.error = '';
+        if (form.mode === 'create-folder') form.url = '';
+        this.updateModal();
+        this.focusPrimaryInput();
+    },
+
+    closeForm: function () {
+        const state = this.getState();
+        if (!state.form && !state.confirmDelete) return;
+        state.form = null;
+        state.confirmDelete = null;
+        this.updateModal();
+        this.updateHeaderControls();
+    },
+
+    requestDelete: function (id) {
+        if (!this.isEnabled() || this.isPending()) return;
+        const dockIndex = this.parseDockIndex(id);
+        if (dockIndex >= 0) {
+            const quickLink = this.getQuickLinkByIndex(dockIndex);
+            if (!quickLink) return;
+            this.getState().confirmDelete = {
+                targetId: this.getDockTargetId(dockIndex),
+                title: quickLink.title || quickLink.url || this.getDockTargetId(dockIndex),
+                type: 'dock-link',
+                scope: 'dock'
+            };
+            this.updateModal();
+            return;
+        }
+        const node = this.getNodeById(id);
+        if (!node) return;
+        this.getState().confirmDelete = {
+            targetId: node.id,
+            title: node.title || node.id,
+            type: node.type
+        };
+        this.updateModal();
+    },
+
+    closeDeleteConfirm: function () {
+        if (!this.getConfirmDelete()) return;
+        this.getState().confirmDelete = null;
+        this.updateModal();
+        if (this.getForm()) this.focusPrimaryInput();
+    },
+
+    handleFormInput: function (target) {
+        const form = this.getForm();
+        if (!form) return;
+        const field = target && target.dataset ? target.dataset.bookmarkInput : '';
+        if (!field || !Object.prototype.hasOwnProperty.call(form, field)) return;
+        form[field] = target.value;
+        if (form.error) {
+            form.error = '';
+            const errorEl = document.querySelector('.bookmark-form-error');
+            if (errorEl) {
+                errorEl.hidden = true;
+                errorEl.textContent = '';
+            }
+        }
+    },
+
+    async handleIconFile(file) {
+        const form = this.getForm();
+        if (!form || !file) return;
+        if (!/^image\//i.test(file.type || '')) {
+            form.error = t('bookmarkErrorIconInvalid');
+            this.updateModal();
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            form.icon = String(e.target?.result || '');
+            form.error = '';
+            this.updateModal();
+        };
+        reader.readAsDataURL(file);
+    },
+
+    validateForm: function () {
+        const form = this.getForm();
+        if (!form) return null;
+        const title = String(form.title || '').trim();
+        if (!title) {
+            form.error = t('bookmarkErrorTitleRequired');
+            return null;
+        }
+        const payload = { title };
+        const icon = normalizeCustomIconUrl(form.icon);
+        if (String(form.icon || '').trim() && !icon) {
+            form.error = t('bookmarkErrorIconInvalid');
+            return null;
+        }
+        payload.icon = icon;
+        if (form.mode === 'edit-link' || form.mode === 'create-link' || form.mode === 'edit-dock-link' || form.mode === 'create-dock-link') {
+            const url = normalizeUrl(form.url);
+            if (!url) {
+                form.error = t('bookmarkErrorUrlInvalid');
+                return null;
+            }
+            payload.url = url;
+        }
+        form.error = '';
+        return payload;
+    },
+
+    async submitForm() {
+        const state = this.getState();
+        const form = state.form;
+        if (!form || state.pending) return;
+
+        const payload = this.validateForm();
+        if (!payload) {
+            this.updateModal();
+            this.focusPrimaryInput();
+            return;
+        }
+
+        state.pending = true;
+        this.updateHeaderControls();
+        this.updateModal();
+
+        try {
+            if (this.isDockForm(form)) {
+                const quickLink = { title: payload.title, url: payload.url, icon: payload.icon || '' };
+                const dockIndex = form.targetId === null ? -1 : this.parseDockIndex(form.targetId);
+                if (dockIndex >= 0) {
+                    if (!this.getQuickLinkByIndex(dockIndex)) throw new Error('dock_link_missing');
+                    State.quickLinks[dockIndex] = quickLink;
+                } else {
+                    State.quickLinks.push(quickLink);
+                }
+                Storage.saveNow();
+                state.form = null;
+                state.confirmDelete = null;
+                this.updateModal();
+                UIManager.renderDock();
+                showActionToast(t(dockIndex >= 0 ? 'dockSaveSuccess' : 'dockCreateSuccess'), 'success');
+            } else if (form.mode === 'edit-folder' || form.mode === 'edit-link') {
+                const changes = { title: payload.title };
+                if (payload.url) changes.url = payload.url;
+                await callBookmarkApi((done) => chrome.bookmarks.update(form.targetId, changes, done));
+                if (payload.icon) State.bookmarkCustomIcons[form.targetId] = payload.icon;
+                else delete State.bookmarkCustomIcons[form.targetId];
+                Storage.save();
+                state.form = null;
+                state.confirmDelete = null;
+                this.updateModal();
+                await this.refreshAndRenderCurrentFolder();
+                showActionToast(t('bookmarkSaveSuccess'), 'success');
+            } else {
+                const parentId = form.parentId || this.getCurrentFolderNode()?.id;
+                if (!parentId) throw new Error('parent_unavailable');
+                const createInfo = { parentId, title: payload.title };
+                if (payload.url) createInfo.url = payload.url;
+                const created = await callBookmarkApi((done) => chrome.bookmarks.create(createInfo, done));
+                if (payload.icon && created?.id) State.bookmarkCustomIcons[created.id] = payload.icon;
+                Storage.save();
+                state.form = null;
+                state.confirmDelete = null;
+                this.updateModal();
+                await this.refreshAndRenderCurrentFolder();
+                showActionToast(t('bookmarkCreateSuccess'), 'success');
+            }
+        } catch (err) {
+            if (this.isDockForm(form)) {
+                form.error = t(form.mode.startsWith('create') ? 'dockCreateFailed' : 'dockSaveFailed');
+            } else {
+                form.error = t(form.mode.startsWith('create') ? 'bookmarkCreateFailed' : 'bookmarkSaveFailed');
+            }
+            this.updateModal();
+            showActionToast(form.error, 'error');
+            this.focusPrimaryInput();
+        } finally {
+            state.pending = false;
+            this.updateHeaderControls();
+            this.updateModal();
+        }
+    },
+
+    async remove(id) {
+        if (!this.isEnabled() || this.isPending()) return;
+        const dockIndex = this.parseDockIndex(id);
+        if (dockIndex >= 0) {
+            if (!this.getQuickLinkByIndex(dockIndex)) return;
+            const state = this.getState();
+            state.pending = true;
+            this.updateHeaderControls();
+            this.updateModal();
+            try {
+                State.quickLinks.splice(dockIndex, 1);
+                Storage.saveNow();
+                state.form = null;
+                state.confirmDelete = null;
+                this.updateModal();
+                UIManager.renderDock();
+                showActionToast(t('dockDeleteSuccess'), 'success');
+            } catch (err) {
+                showActionToast(t('dockDeleteFailed'), 'error');
+            } finally {
+                state.pending = false;
+                this.updateHeaderControls();
+                this.updateModal();
+            }
+            return;
+        }
+        const node = this.getNodeById(id);
+        if (!node) return;
+
+        const state = this.getState();
+        state.pending = true;
+        this.updateHeaderControls();
+        this.updateModal();
+
+        try {
+            if (node.type === 'folder') {
+                await callBookmarkApi((done) => chrome.bookmarks.removeTree(id, done));
+            } else {
+                await callBookmarkApi((done) => chrome.bookmarks.remove(id, done));
+            }
+            collectBookmarkIds(node).forEach((bookmarkId) => {
+                delete State.bookmarkCustomIcons[bookmarkId];
+            });
+            Storage.save();
+            if (state.form && state.form.targetId === id) state.form = null;
+            state.confirmDelete = null;
+            this.updateModal();
+            await this.refreshAndRenderCurrentFolder();
+            showActionToast(t('bookmarkDeleteSuccess'), 'success');
+        } catch (err) {
+            showActionToast(t('bookmarkDeleteFailed'), 'error');
+        } finally {
+            state.pending = false;
+            this.updateHeaderControls();
+            this.updateModal();
+        }
+    },
+
+    renderFormModal: function (form) {
+        if (!form) return '';
+        const isCreate = form.targetId === null;
+        const isDock = this.isDockForm(form);
+        const isLink = form.mode === 'edit-link' || form.mode === 'create-link';
+        const isDockLink = form.mode === 'edit-dock-link' || form.mode === 'create-dock-link';
+        const disabled = this.isPending() ? ' disabled aria-disabled="true"' : '';
+        const titleValue = escapeHtml(form.title || '');
+        const urlValue = escapeHtml(form.url || '');
+        const iconValue = escapeHtml(form.icon || '');
+        const currentFolderTitle = escapeHtml(this.getCurrentFolderNode()?.title || t('home'));
+        const heading = isDock ? (isCreate ? t('dockCreateHeading') : t('dockEditHeading')) : (isCreate ? t('bookmarkCreateHeading') : t('bookmarkEditHeading'));
+        const eyebrow = isCreate ? (isDock ? t('dockCreateAction') : t('btnAddBookmark')) : t('bookmarkEditAction');
+        const subtitle = isDock
+            ? (isCreate ? t('dockCreateHint') : escapeHtml(normalizeUrl(form.url) || form.url || ''))
+            : (isCreate ? currentFolderTitle : (isLink ? escapeHtml(normalizeUrl(form.url) || form.url || '') : currentFolderTitle));
+        const iconPreview = form.icon ? `
+            <div class="bookmark-icon-preview">
+                <div class="bookmark-icon-preview-tile">
+                    <img src="${iconValue}" alt="${escapeHtml(t('linkIcon'))}">
+                </div>
+                <div class="bookmark-icon-preview-copy">${t('bookmarkIconSelected')}</div>
+            </div>
+        ` : '';
+        const switcher = isCreate && !isDock ? `
+            <div class="bookmark-modal-switcher">
+                <button class="bookmark-switch-btn${form.mode === 'create-link' ? ' active' : ''}" type="button" data-action="bookmark-form-mode" data-mode="create-link"${disabled}>${t('bookmarkCreateLink')}</button>
+                <button class="bookmark-switch-btn${form.mode === 'create-folder' ? ' active' : ''}" type="button" data-action="bookmark-form-mode" data-mode="create-folder"${disabled}>${t('bookmarkCreateFolder')}</button>
+            </div>
+        ` : '';
+        const deleteAction = !isCreate ? `
+            <button class="bookmark-danger-btn" type="button" data-action="bookmark-delete-request" data-id="${form.targetId}"${disabled}>${t('bookmarkDeleteAction')}</button>
+        ` : '<span class="bookmark-modal-spacer"></span>';
+        return `
+            <div class="bookmark-modal-backdrop" data-action="bookmark-modal-close"></div>
+            <div class="bookmark-modal-shell">
+                <section class="bookmark-modal" role="dialog" aria-modal="true" aria-label="${heading}">
+                    <button class="bookmark-modal-close" type="button" data-action="bookmark-modal-close" aria-label="${t('btnCancel')}">×</button>
+                    <div class="bookmark-modal-eyebrow">${eyebrow}</div>
+                    <h3 class="bookmark-modal-title">${heading}</h3>
+                    <p class="bookmark-modal-subtitle">${subtitle || '&nbsp;'}</p>
+                    ${switcher}
+                    <form class="bookmark-modal-form" data-bookmark-form="1">
+                        <label class="bookmark-form-label">
+                            <span>${t('customName')}</span>
+                            <input class="bookmark-form-input" type="text" value="${titleValue}" data-bookmark-input="title" autocomplete="off"${disabled}>
+                        </label>
+                        ${isLink || isDockLink ? `
+                            <label class="bookmark-form-label">
+                                <span>${t('customUrl')}</span>
+                                <input class="bookmark-form-input" type="text" value="${urlValue}" data-bookmark-input="url" autocomplete="off" spellcheck="false"${disabled}>
+                            </label>
+                        ` : ''}
+                        <label class="bookmark-form-label">
+                            <span>${t('linkIcon')}</span>
+                            <input class="bookmark-form-input" type="text" value="${iconValue}" data-bookmark-input="icon" autocomplete="off" spellcheck="false" placeholder="https://..."${disabled}>
+                        </label>
+                        ${iconPreview}
+                        <div class="bookmark-icon-actions">
+                            <label class="bookmark-secondary-btn bookmark-icon-upload${this.isPending() ? ' is-disabled' : ''}">
+                                <input type="file" accept="image/*" data-bookmark-icon-file hidden${disabled}>
+                                <span>${t('bookmarkUploadIcon')}</span>
+                            </label>
+                            <button class="bookmark-secondary-btn" type="button" data-action="bookmark-icon-clear"${disabled}>${t('bookmarkClearIcon')}</button>
+                        </div>
+                        <div class="bookmark-form-error"${form.error ? '' : ' hidden'}>${escapeHtml(form.error || '')}</div>
+                        <div class="bookmark-modal-footer">
+                            ${deleteAction}
+                            <div class="bookmark-modal-footer-actions">
+                                <button class="bookmark-secondary-btn" type="button" data-action="bookmark-modal-close"${disabled}>${t('btnCancel')}</button>
+                                <button class="bookmark-primary-btn" type="submit"${disabled}>${isCreate ? (isDock ? t('dockCreateAction') : t('btnAddBookmark')) : t('btnSave')}</button>
+                            </div>
+                        </div>
+                    </form>
+                </section>
+            </div>
+        `;
+    },
+
+    renderDeleteModal: function (confirmDelete) {
+        if (!confirmDelete) return '';
+        const disabled = this.isPending() ? ' disabled aria-disabled="true"' : '';
+        const confirmCopy = confirmDelete.scope === 'dock'
+            ? t('dockDeleteConfirm', { title: confirmDelete.title })
+            : t('bookmarkDeleteConfirm', { title: confirmDelete.title });
+        return `
+            <div class="bookmark-modal-backdrop" data-action="bookmark-delete-cancel"></div>
+            <div class="bookmark-modal-shell danger">
+                <section class="bookmark-modal danger" role="dialog" aria-modal="true" aria-label="${t('bookmarkDeleteAction')}">
+                    <div class="bookmark-modal-icon danger">!</div>
+                    <h3 class="bookmark-modal-title">${t('bookmarkDeleteAction')}</h3>
+                    <p class="bookmark-modal-copy">${escapeHtml(confirmCopy)}</p>
+                    <div class="bookmark-confirm-actions">
+                        <button class="bookmark-secondary-btn" type="button" data-action="bookmark-delete-cancel"${disabled}>${t('btnCancel')}</button>
+                        <button class="bookmark-danger-btn" type="button" data-action="bookmark-delete-confirm" data-id="${confirmDelete.targetId}"${disabled}>${t('bookmarkDeleteAction')}</button>
+                    </div>
+                </section>
+            </div>
+        `;
+    },
+
+    renderCardActions: function (node) {
+        if (!this.isEnabled()) return '';
+        return `
+            <button class="bookmark-card-cue bookmark-card-cue-delete" type="button" data-action="bookmark-card-delete" data-id="${node.id}" aria-label="${escapeHtml(t('bookmarkDeleteAction'))}: ${escapeHtml(node.title || node.id)}">
+                <svg viewBox="0 0 24 24">
+                    <path d="M5 7h14" />
+                    <path d="M9 7V5h6v2" />
+                    <path d="M10 11v6" />
+                    <path d="M14 11v6" />
+                    <path d="M7 7l1 12h8l1-12" />
+                </svg>
+            </button>
+            <button class="bookmark-card-cue" type="button" data-action="bookmark-card-edit" data-id="${node.id}" aria-label="${escapeHtml(t('bookmarkEditAction'))}: ${escapeHtml(node.title || node.id)}">
+                <svg viewBox="0 0 24 24">
+                    <path d="M14 5l5 5" />
+                    <path d="M4 20l4-1 10-10-3-3L5 16l-1 4z" />
+                </svg>
+            </button>
+        `;
+    },
+
+    renderDockActions: function (index, title) {
+        if (!this.isEnabled()) return '';
+        return `
+            <button class="bookmark-card-cue bookmark-card-cue-delete dock-card-cue dock-card-cue-delete" type="button" data-action="dock-link-delete" data-index="${index}" aria-label="${escapeHtml(t('bookmarkDeleteAction'))}: ${escapeHtml(title || String(index + 1))}">
+                <svg viewBox="0 0 24 24">
+                    <path d="M5 7h14" />
+                    <path d="M9 7V5h6v2" />
+                    <path d="M10 11v6" />
+                    <path d="M14 11v6" />
+                    <path d="M7 7l1 12h8l1-12" />
+                </svg>
+            </button>
+            <button class="bookmark-card-cue dock-card-cue" type="button" data-action="dock-link-edit" data-index="${index}" aria-label="${escapeHtml(t('bookmarkEditAction'))}: ${escapeHtml(title || String(index + 1))}">
+                <svg viewBox="0 0 24 24">
+                    <path d="M14 5l5 5" />
+                    <path d="M4 20l4-1 10-10-3-3L5 16l-1 4z" />
+                </svg>
+            </button>
+        `;
+    },
+
+    renderDockCreateItem: function () {
+        if (!this.isEnabled()) return '';
+        return `
+            <button class="dock-item dock-add-item" type="button" data-action="dock-link-create" aria-label="${escapeHtml(t('dockCreateAction'))}">
+                <div class="ios-icon dock-add-icon">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M12 5v14" />
+                        <path d="M5 12h14" />
+                    </svg>
+                </div>
+            </button>
+        `;
+    },
+
+    renderCard: function (node) {
+        const escTitle = escapeHtml(node.title || '');
+        const displayTitle = node.highlightedTitle || escTitle;
+        const cue = this.renderCardActions(node);
+
+        if (node.type === 'folder') {
+            return `<div class="card${this.isEnabled() ? ' is-edit-mode' : ''}" data-fid="${node.id}" data-ftitle="${escTitle}" data-bookmark-id="${node.id}" data-bookmark-type="folder" role="listitem" tabindex="0" aria-label="${escTitle}">${cue}<div class="ios-icon folder-icon"><span class="folder-emoji">馃搨</span></div><div class="card-title">${displayTitle}</div></div>`;
+        }
+
+        const safeUrl = normalizeUrl(node.url);
+        const domain = getDomain(safeUrl);
+        const candidates = getFaviconCandidates(domain, node.icon || '');
+        const iconUrl = candidates[0] || '';
+        const candidatesAttr = escapeHtml(JSON.stringify(candidates));
+        const href = safeUrl || '#';
+        const disabled = safeUrl ? '' : ' aria-disabled="true" tabindex="-1"';
+        const draggable = this.isEnabled() ? '' : ' draggable="true"';
+        return `<a href="${href}" class="card${this.isEnabled() ? ' is-edit-mode' : ''}" target="_blank" rel="noopener"${draggable} data-bookmark-id="${node.id}" data-bookmark-type="link" role="listitem" aria-label="${escTitle}"${disabled}>${cue}<div class="ios-icon"><img class="card-icon" data-src="${iconUrl}" data-step="0" data-candidates="${candidatesAttr}" loading="lazy" decoding="async" data-url="${safeUrl}" data-title="${escTitle}"></div><div class="card-title">${displayTitle}</div></a>`;
+    }
+};
+
 const scheduleIdle = window.requestIdleCallback
     ? (cb) => window.requestIdleCallback(cb, { timeout: 500 })
     : (cb) => setTimeout(cb, 1);
 
 // Unified sidebar status helper — sets class + content on any .bg-status element
+const formatStyleValue = (style, value) => {
+    const num = parseInt(value, 10);
+    if (!Number.isFinite(num)) return String(value ?? '');
+    return `${num}${style.unit || ''}`;
+};
+
+const getActiveStylePreset = () => Object.keys(Config.STYLE_PRESETS).find((presetId) => {
+    const preset = Config.STYLE_PRESETS[presetId];
+    return Object.keys(preset).every((key) => parseInt(State.styles[key], 10) === parseInt(preset[key], 10));
+}) || '';
+
 const setSidebarStatus = (el, html, type = '') => {
     if (!el) return;
     el.className = `bg-status${type ? ' ' + type : ''}`;
@@ -618,6 +1586,8 @@ const applyLanguage = () => {
         if (el) el.textContent = t(key);
     });
     // 含 <span> 子元素的按钮
+    if ($('btnEditBookmarks')) $('btnEditBookmarks').querySelector('span').textContent = State.bookmarkEditor?.enabled ? t('btnDoneEditing') : t('btnEditBookmarks');
+    if ($('btnAddBookmark')) $('btnAddBookmark').querySelector('span').textContent = t('btnAddBookmark');
     if ($('btnSyncBookmarks')) $('btnSyncBookmarks').querySelector('span').textContent = t('btnSyncBookmarks');
     if ($('btnManageBookmarks')) $('btnManageBookmarks').querySelector('span').textContent = t('btnManageBookmarks');
     if ($('searchInput')) UIManager.updateSearchPlaceholder();
@@ -627,6 +1597,12 @@ const applyLanguage = () => {
         const locale = State.language === 'en' ? 'en-US' : 'zh-CN';
         $('dateLink').textContent = now.toLocaleDateString(locale, { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' });
         $('lunarDate').textContent = State.language === 'en' ? '' : getChineseLunarDate(now);
+    }
+    if (typeof UIManager !== 'undefined' && $('dockContainer')) UIManager.renderDock();
+    if (typeof BookmarkEditor !== 'undefined') BookmarkEditor.updateHeaderControls();
+    if (typeof BookmarkEditor !== 'undefined') BookmarkEditor.updateModal();
+    if (typeof BookmarkEditor !== 'undefined' && State.bookmarkEditor?.enabled && !State.isSearchMode && State.bookmarks.length && $('bookmarkGrid')) {
+        UIManager.enterFolder(State.currentFolderId);
     }
 };
 
@@ -714,6 +1690,7 @@ const UIManager = {
             } else {
                 this.enterFolder(this.getDefaultFolderId());
             }
+            BookmarkEditor.updateHeaderControls();
         });
     },
 
@@ -744,13 +1721,31 @@ const UIManager = {
     applyStyles: function () {
         const r = document.documentElement.style;
         const s = State.styles;
+        const accentColor = `hsl(${s.accentHue} ${s.accentSaturation}% ${s.accentLightness}%)`;
+        const accentSoft = `hsl(${s.accentHue} ${s.accentSaturation}% ${s.accentLightness}% / 0.2)`;
+        const accentSoftStrong = `hsl(${s.accentHue} ${s.accentSaturation}% ${s.accentLightness}% / 0.35)`;
+        const accentGlow = `hsl(${s.accentHue} ${s.accentSaturation}% ${s.accentLightness}% / 0.42)`;
+        const accentSurface = `hsl(${s.accentHue} ${s.accentSaturation}% ${Math.min(72, s.accentLightness)}% / 0.78)`;
+        const accentSurfaceStrong = `hsl(${s.accentHue} ${s.accentSaturation}% ${Math.min(78, s.accentLightness + 8)}% / 0.88)`;
         r.setProperty('--icon-size', s.iconSize + 'px');
         r.setProperty('--icon-inner-scale', s.innerScale / 100);
         r.setProperty('--card-font-size', s.fontSize + 'px');
         r.setProperty('--grid-gap', s.gridGap + 'px');
         r.setProperty('--grid-min-width', Math.max(90, s.iconSize + 30) + 'px');
+        r.setProperty('--bookmark-hover-lift', s.bookmarkHoverLift + 'px');
+        r.setProperty('--bookmark-hover-scale', s.bookmarkHoverScale / 100);
         r.setProperty('--bg-blur', s.bgBlur + 'px');
         r.setProperty('--bg-overlay-opacity', s.bgOverlay / 100);
+        r.setProperty('--glass-blur', s.glassBlur + 'px');
+        r.setProperty('--glass-radius', s.glassRadius + 'px');
+        r.setProperty('--card-radius', s.cardRadius + 'px');
+        r.setProperty('--accent-color', accentColor);
+        r.setProperty('--accent-soft', accentSoft);
+        r.setProperty('--accent-soft-strong', accentSoftStrong);
+        r.setProperty('--accent-glow', accentGlow);
+        r.setProperty('--accent-surface', accentSurface);
+        r.setProperty('--accent-surface-strong', accentSurfaceStrong);
+        this.applySidebarWidth();
     },
 
     applySidebarWidth: function () {
@@ -830,6 +1825,7 @@ const UIManager = {
         const container = $('dockContainer');
         const fragment = document.createDocumentFragment();
         const tempDiv = document.createElement('div');
+        const editing = typeof BookmarkEditor !== 'undefined' && BookmarkEditor.isEnabled();
 
         tempDiv.innerHTML = State.quickLinks.map((i, index) => {
             // 优先使用自定义图标，其次缓存，再使用多个备用源
@@ -841,15 +1837,17 @@ const UIManager = {
             const safeTitle = escapeHtml(i.title || '');
             const href = safeUrl || '#';
             const disabled = safeUrl ? '' : ' aria-disabled="true" tabindex="-1"';
+            const cue = editing ? BookmarkEditor.renderDockActions(index, i.title || i.url || String(index + 1)) : '';
 
             // 添加 draggable="true" 和 data-index
             return `
-        <a href="${href}" class="dock-item" target="_blank" rel="noopener" draggable="true" data-index="${index}" data-url="${safeUrl}" data-title="${safeTitle}" role="listitem" aria-label="${safeTitle}"${disabled}>
+        <a href="${href}" class="dock-item${editing ? ' is-edit-mode' : ''}" target="_blank" rel="noopener" draggable="${editing ? 'false' : 'true'}" data-index="${index}" data-url="${safeUrl}" data-title="${safeTitle}" role="listitem" aria-label="${safeTitle}"${disabled}>
+            ${cue}
             <div class="ios-icon">
                 <img class="dock-icon" data-src="${iconUrl}" data-step="0" data-candidates="${candidatesAttr}" decoding="async" data-url="${safeUrl}" data-title="${safeTitle}">
             </div>
         </a>`;
-        }).join('');
+        }).join('') + (editing ? BookmarkEditor.renderDockCreateItem() : '');
 
         while (tempDiv.firstChild) {
             fragment.appendChild(tempDiv.firstChild);
@@ -903,6 +1901,10 @@ const UIManager = {
     },
 
     enterFolder: function (fid) {
+        const prevFolderId = State.currentFolderId;
+        if (prevFolderId !== fid && State.bookmarkEditor?.form) {
+            State.bookmarkEditor.form = null;
+        }
         State.currentFolderId = fid;
         let items = State.bookmarks;
 
@@ -924,6 +1926,7 @@ const UIManager = {
         }
         this.renderBreadcrumb();
         this.renderGrid(items);
+        BookmarkEditor.updateHeaderControls();
     },
 
     renderBreadcrumb: function () {
@@ -942,7 +1945,9 @@ const UIManager = {
         const fragment = document.createDocumentFragment();
         const tempDiv = document.createElement('div');
 
-        tempDiv.innerHTML = items.map(i => {
+        tempDiv.innerHTML = items.map(i => BookmarkEditor.renderCard(i)).join('');
+        /*
+        } else { /* legacy rendering path removed
             const escTitle = escapeHtml(i.title || '');
             // Use highlighted title if available (from search), otherwise raw title
             const displayTitle = i.highlightedTitle || escTitle;
@@ -959,7 +1964,8 @@ const UIManager = {
             const href = safeUrl || '#';
             const disabled = safeUrl ? '' : ' aria-disabled="true" tabindex="-1"';
             return `<a href="${href}" class="card" target="_blank" rel="noopener" draggable="true" role="listitem" aria-label="${escTitle}"${disabled}><div class="ios-icon"><img class="card-icon" data-src="${iconUrl}" data-step="0" data-candidates="${candidatesAttr}" loading="lazy" decoding="async" data-url="${safeUrl}" data-title="${escTitle}"></div><div class="card-title">${displayTitle}</div></a>`;
-        }).join('');
+            }).join('');
+        */
 
         while (tempDiv.firstChild) {
             fragment.appendChild(tempDiv.firstChild);
@@ -967,6 +1973,12 @@ const UIManager = {
 
         grid.innerHTML = '';
         grid.appendChild(fragment);
+        items.filter((item) => item.type === 'folder' && item.icon).forEach((item) => {
+            const folderIcon = grid.querySelector(`.card[data-bookmark-id="${item.id}"] .folder-icon`);
+            if (!folderIcon) return;
+            folderIcon.classList.add('has-custom-icon');
+            folderIcon.innerHTML = `<img class="card-icon custom-folder-icon loaded" src="${escapeHtml(item.icon)}" alt="${escapeHtml(item.title || 'Folder')}">`;
+        });
         bindIconEvents(grid);
     },
 
@@ -1281,7 +2293,8 @@ const Storage = {
     load: function () {
         const applyData = (data) => {
             const get = (k) => data?.[k] ?? null;
-            State.bookmarks = get('my_bookmarks') || [];
+            State.bookmarkCustomIcons = get('my_bookmark_icon_map') || {};
+            State.bookmarks = applyBookmarkCustomIcons(get('my_bookmarks') || [], State.bookmarkCustomIcons);
             State.quickLinks = get('my_quicklinks') || Config.DEFAULT_LINKS;
             State.styles = { ...State.styles, ...(get('my_style_config') || {}) };
             State.bgConfig = get('my_bg_config') || State.bgConfig;
@@ -1301,7 +2314,7 @@ const Storage = {
             }
 
             fetchBookmarksFromChrome().then((bookmarks) => {
-                State.bookmarks = bookmarks || [];
+                State.bookmarks = applyBookmarkCustomIcons(bookmarks || []);
                 resolve();
             }).catch(() => resolve());
         };
@@ -1317,6 +2330,7 @@ const Storage = {
                     my_search_engine: initData.currentEngine || initData.searchEngine || 'google',
                     my_lang: initData.language || 'zh',
                     my_custom_bg_sources: initData.customBgSources || [],
+                    my_bookmark_icon_map: initData.bookmarkCustomIcons || {},
                     my_search_history: initData.searchHistory || [],
                     my_search_history_enabled: initData.searchHistoryEnabled !== false && initData.searchHistoryEnabled !== 'false'
                 };
@@ -1336,6 +2350,7 @@ const Storage = {
                         localStorage.setItem('my_search_engine', mapped.my_search_engine);
                         localStorage.setItem('my_lang', mapped.my_lang);
                         localStorage.setItem('my_custom_bg_sources', JSON.stringify(mapped.my_custom_bg_sources));
+                        localStorage.setItem('my_bookmark_icon_map', JSON.stringify(mapped.my_bookmark_icon_map));
                         localStorage.setItem('my_search_history', JSON.stringify(mapped.my_search_history || []));
                         localStorage.setItem('my_search_history_enabled', String(!!mapped.my_search_history_enabled));
                         localStorage.setItem('initialized_v1', 'true');
@@ -1376,6 +2391,7 @@ const Storage = {
                     my_search_engine: localStorage.getItem('my_search_engine') || 'google',
                     my_lang: localStorage.getItem('my_lang') || 'zh',
                     my_custom_bg_sources: getLocal('my_custom_bg_sources'),
+                    my_bookmark_icon_map: getLocal('my_bookmark_icon_map'),
                     my_search_history: getLocal('my_search_history'),
                     my_search_history_enabled: localStorage.getItem('my_search_history_enabled')
                 });
@@ -1399,13 +2415,13 @@ const Storage = {
         });
     },
     _saveTimer: 0,
-    save: function () {
+    save: async function () {
         clearTimeout(this._saveTimer);
-        this._saveTimer = setTimeout(() => this._doSave(), 300);
+        this._saveTimer = setTimeout(() => { this._doSave(); }, 300);
     },
     saveNow: function () {
         clearTimeout(this._saveTimer);
-        this._doSave();
+        return this._doSave();
     },
     _doSave: function () {
         const data = {
@@ -1416,12 +2432,15 @@ const Storage = {
             my_search_engine: State.currentEngine,
             my_lang: State.language,
             my_custom_bg_sources: State.customBgSources,
+            my_bookmark_icon_map: State.bookmarkCustomIcons,
             my_search_history: State.searchHistory,
             my_search_history_enabled: String(State.searchHistoryEnabled)
         };
 
         if (isExtensionContext() && chrome.storage && chrome.storage.local) {
-            chrome.storage.local.set(data);
+            return new Promise((resolve) => {
+                chrome.storage.local.set(data, () => resolve());
+            });
         } else {
             localStorage.setItem('my_bookmarks', JSON.stringify(State.bookmarks));
             localStorage.setItem('my_quicklinks', JSON.stringify(State.quickLinks));
@@ -1430,13 +2449,16 @@ const Storage = {
             localStorage.setItem('my_search_engine', State.currentEngine);
             localStorage.setItem('my_lang', State.language);
             localStorage.setItem('my_custom_bg_sources', JSON.stringify(State.customBgSources));
+            localStorage.setItem('my_bookmark_icon_map', JSON.stringify(State.bookmarkCustomIcons));
             localStorage.setItem('my_search_history', JSON.stringify(State.searchHistory));
             localStorage.setItem('my_search_history_enabled', String(State.searchHistoryEnabled));
+            return Promise.resolve();
         }
     },
     export: function () {
         const data = {
             bookmarks: State.bookmarks,
+            bookmarkCustomIcons: State.bookmarkCustomIcons,
             quickLinks: State.quickLinks,
             styles: State.styles,
             bgConfig: State.bgConfig,
@@ -1462,7 +2484,8 @@ const Storage = {
         r.onload = e => {
             try {
                 const data = JSON.parse(e.target.result);
-                State.bookmarks = data.bookmarks || [];
+                State.bookmarkCustomIcons = data.bookmarkCustomIcons || {};
+                State.bookmarks = applyBookmarkCustomIcons(data.bookmarks || [], State.bookmarkCustomIcons);
                 State.quickLinks = data.quickLinks || Config.DEFAULT_LINKS;
                 State.styles = { ...State.styles, ...(data.styles || {}) };
                 State.bgConfig = data.bgConfig || State.bgConfig;
@@ -1583,11 +2606,34 @@ const SettingsManager = {
     },
 
     render: function () {
-        // Style Sliders
-        $('appearanceControls').innerHTML = Config.STYLES.map(s => `
-                <div class="range-container"><span class="range-label">${t(s.labelKey)}</span>
-                <input type="range" min="${s.min}" max="${s.max}" value="${State.styles[s.id]}" data-style="${s.id}"></div>`
-        ).join('');
+        const activePreset = getActiveStylePreset();
+        const presetButtons = Object.keys(Config.STYLE_PRESETS).map((id) => `
+                <button class="appearance-preset-btn${activePreset === id ? ' active' : ''}" type="button" data-preset="${id}">${t(`appearance.preset${id.charAt(0).toUpperCase() + id.slice(1)}`)}</button>
+        `).join('');
+        const groupedControls = Config.STYLE_GROUPS.map((group) => {
+            const items = Config.STYLES.filter((style) => style.group === group.id).map((style) => `
+                <label class="range-container">
+                    <div class="range-meta">
+                        <span class="range-label">${t(style.labelKey)}</span>
+                        <span class="range-value" data-style-value="${style.id}">${formatStyleValue(style, State.styles[style.id])}</span>
+                    </div>
+                    <input type="range" min="${style.min}" max="${style.max}" step="${style.step || 1}" value="${State.styles[style.id]}" data-style="${style.id}">
+                </label>
+            `).join('');
+            return `
+                <section class="appearance-section">
+                    <div class="appearance-section-title">${t(group.titleKey)}</div>
+                    ${items}
+                </section>
+            `;
+        }).join('');
+        $('appearanceControls').innerHTML = `
+            <div class="appearance-presets">
+                <div class="appearance-section-title">${t('appearance.presets')}</div>
+                <div class="appearance-preset-grid">${presetButtons}</div>
+            </div>
+            ${groupedControls}
+        `;
 
         // Language
         $('languageGrid').innerHTML = [
@@ -1605,9 +2651,11 @@ const SettingsManager = {
         const historyToggle = $('toggleHistory');
         if (historyToggle) historyToggle.checked = !!State.searchHistoryEnabled;
 
-        // Links
-        $('quickLinksEditor').innerHTML = '';
-        State.quickLinks.forEach(l => this.addLinkRow(l));
+        const dockLabel = $('labelDock');
+        if (dockLabel) {
+            const dockGroup = dockLabel.closest('.setting-group');
+            if (dockGroup) dockGroup.remove();
+        }
 
         // Backgrounds
         const sourcesMap = getBgSourcesMap();
@@ -1628,6 +2676,9 @@ const SettingsManager = {
                 const key = e.target.dataset.style;
                 if (key) SettingsManager.updateStyle(key, e.target.value);
             });
+        });
+        $$('#appearanceControls [data-preset]').forEach((btn) => {
+            btn.addEventListener('click', (e) => SettingsManager.applyStylePreset(e.currentTarget.dataset.preset));
         });
 
         $$('#bgTypeRadios input[name="bgT"]').forEach((input) => {
@@ -1666,6 +2717,17 @@ const SettingsManager = {
     updateStyle: function (key, val) {
         State.styles[key] = parseInt(val);
         UIManager.applyStyles();
+        const style = Config.STYLES.find((item) => item.id === key);
+        const valueEl = document.querySelector(`[data-style-value="${key}"]`);
+        if (style && valueEl) valueEl.textContent = formatStyleValue(style, State.styles[key]);
+    },
+
+    applyStylePreset: function (presetId) {
+        const preset = Config.STYLE_PRESETS[presetId];
+        if (!preset) return;
+        State.styles = { ...State.styles, ...preset };
+        UIManager.applyStyles();
+        this.render();
     },
 
     setBgType: function (type) {
@@ -1750,15 +2812,7 @@ const SettingsManager = {
         }
     },
 
-    save: function () {
-        const rows = $$('#quickLinksEditor .link-editor-row');
-
-        State.quickLinks = Array.from(rows).map(r => {
-            const i = r.querySelectorAll('input');
-            const normalized = normalizeUrl(i[1].value);
-            return { title: i[0].value, url: normalized, icon: i[2].value };
-        }).filter(l => l.title && l.url);
-
+    save: async function () {
         // Engine
         const eng = document.querySelector('input[name="eng"]:checked');
         if (eng) State.currentEngine = eng.value;
@@ -1789,7 +2843,7 @@ const SettingsManager = {
         // Import
         if (State.pendingImportData) { State.bookmarks = State.pendingImportData; UIManager.enterFolder(UIManager.getDefaultFolderId()); }
 
-        Storage.saveNow();
+        await Storage.saveNow();
         location.reload();
     },
 
@@ -1889,6 +2943,11 @@ const DragManager = {
 
         // 判断拖拽源
         if (this.dragSrcEl.classList.contains('dock-item')) {
+            if (typeof BookmarkEditor !== 'undefined' && BookmarkEditor.isEnabled()) {
+                e.preventDefault();
+                this.dragSrcEl = null;
+                return;
+            }
             this.dragSrcEl.classList.add('dragging');
             this.dragSrcEl.style.transform = 'scale(1.05)';
             this.dragSrcEl.style.boxShadow = '0 20px 40px rgba(0,0,0,0.4)';
@@ -1921,6 +2980,7 @@ const DragManager = {
     },
 
     handleDragOver: function (e) {
+        if (typeof BookmarkEditor !== 'undefined' && BookmarkEditor.isEnabled()) return;
         e.preventDefault(); // 必要，允许 drop
         this.lastDragEvent = e;
         if (this.dragOverRaf) return;
@@ -1959,6 +3019,7 @@ const DragManager = {
     },
 
     handleDrop: function (e) {
+        if (typeof BookmarkEditor !== 'undefined' && BookmarkEditor.isEnabled()) return;
         e.stopPropagation();
         e.preventDefault();
 
@@ -2006,6 +3067,7 @@ const DragManager = {
     },
 
     handleTouchStart: function (e) {
+        if (typeof BookmarkEditor !== 'undefined' && BookmarkEditor.isEnabled()) return;
         const target = e.target.closest('.dock-item');
         if (!target) return;
 
@@ -2025,6 +3087,7 @@ const DragManager = {
     },
 
     handleTouchMove: function (e) {
+        if (typeof BookmarkEditor !== 'undefined' && BookmarkEditor.isEnabled()) return;
         if (!e.touches.length) return;
         const touch = e.touches[0];
         const dx = Math.abs(touch.clientX - this.touchStartX);
@@ -2058,6 +3121,7 @@ const DragManager = {
     },
 
     handleTouchEnd: function () {
+        if (typeof BookmarkEditor !== 'undefined' && BookmarkEditor.isEnabled()) return;
         clearTimeout(this.touchTimer);
         if (!this.touchDragging) return;
 
@@ -2121,18 +3185,36 @@ function bindEvents() {
         searchBox.classList.add('engine-open');
         engineToggle.setAttribute('aria-expanded', 'true');
     };
-    // Navigation
-    $('bookmarkGrid').onclick = e => {
+    // Navigation + modal bookmark editing
+    const bookmarkGrid = $('bookmarkGrid');
+    bookmarkGrid.addEventListener('click', (e) => {
+        const deleteTrigger = e.target.closest('[data-action="bookmark-card-delete"]');
+        if (deleteTrigger) {
+            e.preventDefault();
+            e.stopPropagation();
+            BookmarkEditor.requestDelete(deleteTrigger.dataset.id);
+            return;
+        }
+
+        const editTrigger = e.target.closest('[data-action="bookmark-card-edit"]');
+        if (editTrigger) {
+            e.preventDefault();
+            e.stopPropagation();
+            BookmarkEditor.openEdit(editTrigger.dataset.id);
+            return;
+        }
+
         const c = e.target.closest('.card[data-fid]');
         if (c) {
             State.breadcrumbPath.push({ id: c.dataset.fid, title: c.dataset.ftitle });
             UIManager.enterFolder(c.dataset.fid);
             if (scrollArea) scrollArea.scrollTop = 0;
         }
-    };
-    $('bookmarkGrid').onkeydown = e => {
+    });
+
+    bookmarkGrid.onkeydown = e => {
         const activeEl = document.activeElement;
-        const cards = Array.from($('bookmarkGrid').querySelectorAll('.card'));
+        const cards = Array.from($('bookmarkGrid').querySelectorAll('.card[tabindex], a.card'));
         const idx = cards.indexOf(activeEl);
 
         if (e.key === 'Enter' || e.key === ' ') {
@@ -2156,7 +3238,6 @@ function bindEvents() {
         } else if (e.key === 'ArrowLeft') {
             target = Math.max(idx - 1, 0);
         } else {
-            // Compute column count from actual positions
             const firstRect = cards[0].getBoundingClientRect();
             let colCount = 1;
             for (let i = 1; i < cards.length; i++) {
@@ -2175,6 +3256,91 @@ function bindEvents() {
             cards[target].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
         }
     };
+
+    const dockContainer = $('dockContainer');
+    if (dockContainer) {
+        dockContainer.addEventListener('click', (e) => {
+            const deleteTrigger = e.target.closest('[data-action="dock-link-delete"]');
+            if (deleteTrigger) {
+                e.preventDefault();
+                e.stopPropagation();
+                BookmarkEditor.requestDelete(BookmarkEditor.getDockTargetId(deleteTrigger.dataset.index));
+                return;
+            }
+
+            const editTrigger = e.target.closest('[data-action="dock-link-edit"]');
+            if (editTrigger) {
+                e.preventDefault();
+                e.stopPropagation();
+                BookmarkEditor.openDockEdit(editTrigger.dataset.index);
+                return;
+            }
+
+            const createTrigger = e.target.closest('[data-action="dock-link-create"]');
+            if (createTrigger) {
+                e.preventDefault();
+                e.stopPropagation();
+                BookmarkEditor.openDockCreate();
+            }
+        });
+    }
+
+    const bookmarkModalRoot = $('bookmarkModalRoot');
+    if (bookmarkModalRoot) {
+        bookmarkModalRoot.addEventListener('click', (e) => {
+            const action = e.target.closest('[data-action]');
+            if (!action) return;
+            e.preventDefault();
+            e.stopPropagation();
+            const actionType = action.dataset.action;
+            if (actionType === 'bookmark-modal-close') {
+                BookmarkEditor.closeForm();
+                return;
+            }
+            if (actionType === 'bookmark-form-mode') {
+                BookmarkEditor.switchCreateMode(action.dataset.mode);
+                return;
+            }
+            if (actionType === 'bookmark-delete-request') {
+                BookmarkEditor.requestDelete(action.dataset.id);
+                return;
+            }
+            if (actionType === 'bookmark-delete-cancel') {
+                BookmarkEditor.closeDeleteConfirm();
+                return;
+            }
+            if (actionType === 'bookmark-delete-confirm') {
+                BookmarkEditor.remove(action.dataset.id);
+                return;
+            }
+            if (actionType === 'bookmark-icon-clear') {
+                const form = BookmarkEditor.getForm();
+                if (!form) return;
+                form.icon = '';
+                form.error = '';
+                BookmarkEditor.updateModal();
+            }
+        });
+
+        bookmarkModalRoot.addEventListener('input', (e) => {
+            if (e.target.matches('[data-bookmark-input]')) {
+                BookmarkEditor.handleFormInput(e.target);
+            }
+        });
+
+        bookmarkModalRoot.addEventListener('change', (e) => {
+            if (!e.target.matches('[data-bookmark-icon-file]')) return;
+            const file = e.target.files && e.target.files[0];
+            if (file) BookmarkEditor.handleIconFile(file);
+            e.target.value = '';
+        });
+
+        bookmarkModalRoot.addEventListener('submit', (e) => {
+            if (!e.target.matches('[data-bookmark-form]')) return;
+            e.preventDefault();
+            BookmarkEditor.submitForm();
+        });
+    }
     $('breadcrumb').onclick = e => {
         const item = e.target.closest('.breadcrumb-item');
         if (item) {
@@ -2193,6 +3359,22 @@ function bindEvents() {
             UIManager.enterFolder(State.breadcrumbPath[idx].id);
         }
     };
+
+    const editBtn = $('btnEditBookmarks');
+    if (editBtn) {
+        editBtn.addEventListener('click', () => {
+            BookmarkEditor.toggle();
+        });
+    }
+
+    const addBtn = $('btnAddBookmark');
+    if (addBtn) {
+        addBtn.addEventListener('click', () => {
+            BookmarkEditor.openCreate('link');
+        });
+    }
+
+    BookmarkEditor.updateHeaderControls();
 
     const syncBtn = $('btnSyncBookmarks');
     const syncAvailable = () => isExtensionContext() && chrome.bookmarks;
@@ -2216,7 +3398,7 @@ function bindEvents() {
             setSyncBtnState(false);
             try {
                 const bookmarks = await fetchBookmarksFromChrome();
-                State.bookmarks = bookmarks || [];
+                State.bookmarks = applyBookmarkCustomIcons(bookmarks || []);
                 Storage.save();
                 if ($('searchInput') && $('searchInput').value.startsWith('/')) {
                     $('searchInput').value = '';
@@ -2291,12 +3473,13 @@ function bindEvents() {
 
         // Mode 1: Local Bookmark Search (starts with /)
         if (val.startsWith('/')) {
+            if (BookmarkEditor.isEnabled()) BookmarkEditor.exit();
             SuggestionManager.clear(); // Hide web suggestions
             State.isSearchMode = true;
             const q = val.substring(1);
 
             if (!q.trim()) {
-                UIManager.renderGrid([]);
+                UIManager.renderGrid([], true);
                 return;
             }
 
@@ -2457,6 +3640,11 @@ function bindEvents() {
     document.addEventListener('keydown', e => {
         const isInput = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName) || document.activeElement.isContentEditable;
 
+        if (e.key === 'Escape' && BookmarkEditor.handleEscape()) {
+            e.preventDefault();
+            return;
+        }
+
         if (e.key === '/' && !isInput) {
             e.preventDefault();
             input.focus();
@@ -2568,7 +3756,7 @@ function bindEvents() {
     $('btnSaveSettings').onclick = () => SettingsManager.save();
     $('btnReset').onclick = Storage.reset;
     $('btnExportConfig').onclick = () => Storage.export();
-    $('btnAddLinkRow').onclick = () => SettingsManager.addLinkRow();
+    if ($('btnAddLinkRow')) $('btnAddLinkRow').onclick = () => SettingsManager.addLinkRow();
     $('btnAddCustomBg').onclick = () => SettingsManager.addCustomBgRow();
     $('toggleHistory').onchange = (e) => {
         State.searchHistoryEnabled = !!e.target.checked;
