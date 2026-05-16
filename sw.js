@@ -1,4 +1,4 @@
-const CACHE_NAME = 'new-tab-v1';
+const CACHE_NAME = 'new-tab-v2';
 const CORE_ASSETS = [
     './',
     './newtab.html',

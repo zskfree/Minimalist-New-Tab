@@ -376,11 +376,12 @@ const t = (key, vars = {}) => {
     if (!val) return key;
     return String(val).replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? '');
 };
+const cloneDefaultLinks = () => Config.DEFAULT_LINKS.map((item) => ({ ...item }));
 
 /** Module: Application State */
 const State = {
     bookmarks: [],
-    quickLinks: [],
+    quickLinks: cloneDefaultLinks(),
     currentFolderId: 'root',
     breadcrumbPath: [],
     styles: { iconSize: 56, innerScale: 75, fontSize: 13, gridGap: 20, bgBlur: 0, bgOverlay: 28, sidebarWidth: 800, bookmarkHoverLift: 4, bookmarkHoverScale: 106, glassBlur: 18, glassRadius: 16, cardRadius: 15, accentHue: 210, accentSaturation: 100, accentLightness: 52 },
@@ -708,7 +709,11 @@ const callBookmarkApi = (invoke) => new Promise((resolve, reject) => {
 const refreshBookmarksState = async () => {
     const bookmarks = await fetchBookmarksFromChrome();
     State.bookmarks = applyBookmarkCustomIcons(bookmarks || []);
-    Storage.save();
+    SearchIndex.rebuild();
+    Storage.savePartial({
+        my_bookmarks: State.bookmarks,
+        my_bookmark_icon_map: State.bookmarkCustomIcons
+    });
     return State.bookmarks;
 };
 
@@ -1155,7 +1160,7 @@ const BookmarkEditor = {
                 } else {
                     State.quickLinks.push(quickLink);
                 }
-                Storage.saveNow();
+                Storage.savePartial({ quickLinks: State.quickLinks });
                 state.form = null;
                 state.confirmDelete = null;
                 this.updateModal();
@@ -1167,7 +1172,7 @@ const BookmarkEditor = {
                 await callBookmarkApi((done) => chrome.bookmarks.update(form.targetId, changes, done));
                 if (payload.icon) State.bookmarkCustomIcons[form.targetId] = payload.icon;
                 else delete State.bookmarkCustomIcons[form.targetId];
-                Storage.save();
+                Storage.savePartial({ bookmarkCustomIcons: State.bookmarkCustomIcons });
                 state.form = null;
                 state.confirmDelete = null;
                 this.updateModal();
@@ -1180,7 +1185,7 @@ const BookmarkEditor = {
                 if (payload.url) createInfo.url = payload.url;
                 const created = await callBookmarkApi((done) => chrome.bookmarks.create(createInfo, done));
                 if (payload.icon && created?.id) State.bookmarkCustomIcons[created.id] = payload.icon;
-                Storage.save();
+                Storage.savePartial({ bookmarkCustomIcons: State.bookmarkCustomIcons });
                 state.form = null;
                 state.confirmDelete = null;
                 this.updateModal();
@@ -1214,7 +1219,7 @@ const BookmarkEditor = {
             this.updateModal();
             try {
                 State.quickLinks.splice(dockIndex, 1);
-                Storage.saveNow();
+                Storage.savePartial({ quickLinks: State.quickLinks });
                 state.form = null;
                 state.confirmDelete = null;
                 this.updateModal();
@@ -1246,7 +1251,7 @@ const BookmarkEditor = {
             collectBookmarkIds(node).forEach((bookmarkId) => {
                 delete State.bookmarkCustomIcons[bookmarkId];
             });
-            Storage.save();
+            Storage.savePartial({ bookmarkCustomIcons: State.bookmarkCustomIcons });
             if (state.form && state.form.targetId === id) state.form = null;
             state.confirmDelete = null;
             this.updateModal();
@@ -1645,6 +1650,57 @@ const fuzzyMatchWithHighlight = (text, query) => {
     };
 };
 
+const SEARCH_RESULT_LIMIT = 80;
+const SearchIndex = {
+    items: [],
+    rebuild: function (bookmarks = State.bookmarks) {
+        const next = [];
+        const walk = (nodes, path = []) => {
+            (nodes || []).forEach((node) => {
+                if (!node) return;
+                if (node.type === 'link') {
+                    const title = String(node.title || '');
+                    const url = String(node.url || '');
+                    next.push({
+                        node,
+                        titleLower: title.toLowerCase(),
+                        urlLower: url.toLowerCase(),
+                        pathLower: path.join(' / ').toLowerCase()
+                    });
+                }
+                if (node.children) {
+                    walk(node.children, node.type === 'folder' ? path.concat(node.title || '') : path);
+                }
+            });
+        };
+        walk(bookmarks);
+        this.items = next;
+        return next;
+    },
+    search: function (query, limit = SEARCH_RESULT_LIMIT) {
+        const q = String(query || '').trim();
+        if (!q) return [];
+        const qLower = q.toLowerCase();
+        const results = [];
+
+        for (const item of this.items) {
+            const node = item.node;
+            const matchResult = fuzzyMatchWithHighlight(node.title, q);
+            if (matchResult.matched) {
+                const starts = item.titleLower.startsWith(qLower) ? 0.6 : 0;
+                const contains = item.titleLower.includes(qLower) ? 0.2 : 0;
+                const pathBoost = item.pathLower.includes(qLower) ? 0.08 : 0;
+                results.push({ ...node, highlightedTitle: matchResult.html, _score: matchResult.score + starts + contains + pathBoost });
+            } else if (item.urlLower.includes(qLower)) {
+                results.push({ ...node, _score: 0.15 });
+            }
+        }
+
+        results.sort((a, b) => (b._score || 0) - (a._score || 0) || (a.title || '').localeCompare(b.title || ''));
+        return results.slice(0, limit);
+    }
+};
+
 const toCnDay = (n) => {
     const map = ['初一', '初二', '初三', '初四', '初五', '初六', '初七', '初八', '初九', '初十',
         '十一', '十二', '十三', '十四', '十五', '十六', '十七', '十八', '十九', '二十',
@@ -1674,6 +1730,7 @@ const getChineseLunarDate = (date) => {
 
 /** Module: UI Manager */
 const UIManager = {
+    _timeStarted: false,
     init: function () {
         this.setupTime();
         this.applyStyles();
@@ -1695,6 +1752,8 @@ const UIManager = {
     },
 
     setupTime: function () {
+        if (this._timeStarted) return;
+        this._timeStarted = true;
         let lastMinuteKey = '';
         const tick = () => {
             const now = new Date();
@@ -1746,6 +1805,7 @@ const UIManager = {
         r.setProperty('--accent-surface', accentSurface);
         r.setProperty('--accent-surface-strong', accentSurfaceStrong);
         this.applySidebarWidth();
+        this.applyDockScale();
     },
 
     applySidebarWidth: function () {
@@ -1855,7 +1915,42 @@ const UIManager = {
 
         container.innerHTML = '';
         container.appendChild(fragment);
+        this.applyDockScale();
         bindIconEvents(container);
+    },
+
+    applyDockScale: function () {
+        const container = $('dockContainer');
+        if (!container) return;
+        const count = container.querySelectorAll('.dock-item').length;
+        if (!count) return;
+
+        const baseIcon = parseInt(State.styles.iconSize, 10) || 56;
+        const baseGap = window.innerWidth <= 600 ? 10 : 14;
+        const basePadX = window.innerWidth <= 600 ? 12 : 18;
+        const basePadY = 10;
+        const viewportPad = window.innerWidth <= 600 ? 20 : 36;
+        const parentWidth = container.parentElement?.getBoundingClientRect().width || window.innerWidth;
+        const available = Math.max(0, Math.min(parentWidth - viewportPad, 1380));
+        const required = count * baseIcon + Math.max(0, count - 1) * baseGap + basePadX * 2;
+
+        let icon = baseIcon;
+        let gap = baseGap;
+        let padX = basePadX;
+        let padY = basePadY;
+        if (required > available && available > 0) {
+            const ratio = available / required;
+            const minIcon = window.innerWidth <= 600 ? 34 : 38;
+            icon = Math.max(minIcon, Math.floor(baseIcon * ratio));
+            gap = Math.max(6, Math.floor(baseGap * ratio));
+            padX = Math.max(8, Math.floor(basePadX * ratio));
+            padY = Math.max(8, Math.floor(basePadY * Math.max(0.82, ratio)));
+        }
+
+        container.style.setProperty('--dock-icon-size', `${icon}px`);
+        container.style.setProperty('--dock-gap', `${gap}px`);
+        container.style.setProperty('--dock-pad-x', `${padX}px`);
+        container.style.setProperty('--dock-pad-y', `${padY}px`);
     },
 
     getDefaultFolderId: function () {
@@ -2116,7 +2211,7 @@ const SuggestionManager = {
         const list = State.searchHistory || [];
         const next = [q, ...list.filter(x => x !== q)].slice(0, SEARCH_HISTORY_MAX_SAVE);
         State.searchHistory = next;
-        Storage.save();
+        Storage.savePartial({ searchHistory: State.searchHistory });
     },
 
     renderHistory: function () {
@@ -2139,7 +2234,7 @@ const SuggestionManager = {
         }
         const q = (text || '').trim();
         State.searchHistory = (State.searchHistory || []).filter(x => x !== q);
-        Storage.save();
+        Storage.savePartial({ searchHistory: State.searchHistory });
         // 在建议框顶部内联显示反馈，比弹出右上角 toast 更贴近操作位置
         const box = $('suggestionBox');
         if (box && box.classList.contains('active')) {
@@ -2295,7 +2390,7 @@ const Storage = {
             const get = (k) => data?.[k] ?? null;
             State.bookmarkCustomIcons = get('my_bookmark_icon_map') || {};
             State.bookmarks = applyBookmarkCustomIcons(get('my_bookmarks') || [], State.bookmarkCustomIcons);
-            State.quickLinks = get('my_quicklinks') || Config.DEFAULT_LINKS;
+            State.quickLinks = get('my_quicklinks') || cloneDefaultLinks();
             State.styles = { ...State.styles, ...(get('my_style_config') || {}) };
             State.bgConfig = get('my_bg_config') || State.bgConfig;
             State.currentEngine = data?.my_search_engine || 'google';
@@ -2309,14 +2404,19 @@ const Storage = {
         const afterBaseLoad = (resolve) => {
             const shouldLoadBookmarks = (!State.bookmarks || State.bookmarks.length === 0) && isExtensionContext() && chrome.bookmarks;
             if (!shouldLoadBookmarks) {
+                SearchIndex.rebuild();
                 resolve();
                 return;
             }
 
             fetchBookmarksFromChrome().then((bookmarks) => {
                 State.bookmarks = applyBookmarkCustomIcons(bookmarks || []);
+                SearchIndex.rebuild();
                 resolve();
-            }).catch(() => resolve());
+            }).catch(() => {
+                SearchIndex.rebuild();
+                resolve();
+            });
         };
 
         return new Promise((resolve) => {
@@ -2415,6 +2515,18 @@ const Storage = {
         });
     },
     _saveTimer: 0,
+    _storageKeys: {
+        bookmarks: 'my_bookmarks',
+        quickLinks: 'my_quicklinks',
+        styles: 'my_style_config',
+        bgConfig: 'my_bg_config',
+        currentEngine: 'my_search_engine',
+        language: 'my_lang',
+        customBgSources: 'my_custom_bg_sources',
+        bookmarkCustomIcons: 'my_bookmark_icon_map',
+        searchHistory: 'my_search_history',
+        searchHistoryEnabled: 'my_search_history_enabled'
+    },
     save: async function () {
         clearTimeout(this._saveTimer);
         this._saveTimer = setTimeout(() => { this._doSave(); }, 300);
@@ -2455,6 +2567,31 @@ const Storage = {
             return Promise.resolve();
         }
     },
+    savePartial: function (partialData = {}) {
+        const data = {};
+        Object.entries(partialData).forEach(([key, value]) => {
+            const storageKey = this._storageKeys[key] || key;
+            data[storageKey] = storageKey === 'my_search_history_enabled' ? String(value) : value;
+        });
+        if (!Object.keys(data).length) return Promise.resolve();
+
+        if (isExtensionContext() && chrome.storage && chrome.storage.local) {
+            return new Promise((resolve) => {
+                chrome.storage.local.set(data, () => resolve());
+            });
+        }
+
+        try {
+            Object.entries(data).forEach(([key, value]) => {
+                if (typeof value === 'string') {
+                    localStorage.setItem(key, value);
+                } else {
+                    localStorage.setItem(key, JSON.stringify(value));
+                }
+            });
+        } catch (e) { /* ignore storage errors */ }
+        return Promise.resolve();
+    },
     export: function () {
         const data = {
             bookmarks: State.bookmarks,
@@ -2486,12 +2623,13 @@ const Storage = {
                 const data = JSON.parse(e.target.result);
                 State.bookmarkCustomIcons = data.bookmarkCustomIcons || {};
                 State.bookmarks = applyBookmarkCustomIcons(data.bookmarks || [], State.bookmarkCustomIcons);
-                State.quickLinks = data.quickLinks || Config.DEFAULT_LINKS;
+                State.quickLinks = data.quickLinks || cloneDefaultLinks();
                 State.styles = { ...State.styles, ...(data.styles || {}) };
                 State.bgConfig = data.bgConfig || State.bgConfig;
                 State.currentEngine = data.currentEngine || 'google';
                 State.language = data.language || State.language;
                 State.customBgSources = data.customBgSources || State.customBgSources;
+                SearchIndex.rebuild();
                 this.saveNow();
 
                 UIManager.applyStyles();
@@ -2506,7 +2644,7 @@ const Storage = {
                     $('breadcrumb').innerHTML = `<div class="breadcrumb-item">${t('home')}</div>`;
                 }
 
-                if ($('settingsSidebar').classList.contains('open')) SettingsManager.render();
+                if ($('settingsSidebar').classList.contains('open')) SettingsManager.render(true);
 
                 if (status) setSidebarStatus(status, t('importSuccess'), 'success');
             } catch (err) {
@@ -2573,6 +2711,17 @@ window.handleIconError = function (img, url, title) {
 
 /** Module: Settings Manager */
 const SettingsManager = {
+    _rendered: false,
+    _styleRaf: 0,
+    _previewBgUrl: debounce((url) => {
+        const normalized = normalizeUrl(url || '');
+        if (!normalized) {
+            setBgStatus('');
+            return;
+        }
+        setBgStatus(t('bgLoading'), 'loading');
+        $('bg-layer').src = normalized;
+    }, 450),
     toggle: function (open) {
         const sidebar = $('settingsSidebar');
         if (open) {
@@ -2586,7 +2735,8 @@ const SettingsManager = {
             });
             $('sidebarBackdrop').classList.add('open');
             $('mainWrapper').classList.add('sidebar-open');
-            this.render();
+            if (this._rendered) this.syncControls();
+            else this.render();
             UIManager.applySidebarWidth();
         } else {
             sidebar.style.willChange = 'transform';
@@ -2601,11 +2751,12 @@ const SettingsManager = {
                 sidebar.removeEventListener('transitionend', onEnd);
             };
             sidebar.addEventListener('transitionend', onEnd);
-            Storage.load().then(() => { applyLanguage(); UIManager.applyStyles(); UIManager.applyBackground(false, { silent: true }); UIManager.renderDock(); UIManager.updateSearchPlaceholder(); });
         }
     },
 
-    render: function () {
+    render: function (force = false) {
+        if (this._rendered && !force) return;
+        this._rendered = true;
         const activePreset = getActiveStylePreset();
         const presetButtons = Object.keys(Config.STYLE_PRESETS).map((id) => `
                 <button class="appearance-preset-btn${activePreset === id ? ' active' : ''}" type="button" data-preset="${id}">${t(`appearance.preset${id.charAt(0).toUpperCase() + id.slice(1)}`)}</button>
@@ -2685,6 +2836,24 @@ const SettingsManager = {
             input.addEventListener('change', (e) => SettingsManager.setBgType(e.target.value));
         });
     },
+    syncControls: function () {
+        $$('#appearanceControls input[type="range"]').forEach((input) => {
+            const key = input.dataset.style;
+            if (!key) return;
+            input.value = State.styles[key];
+            const style = Config.STYLES.find((item) => item.id === key);
+            const valueEl = document.querySelector(`[data-style-value="${key}"]`);
+            if (style && valueEl) valueEl.textContent = formatStyleValue(style, State.styles[key]);
+        });
+        const engInput = document.querySelector(`input[name="eng"][value="${State.currentEngine}"]`);
+        if (engInput) engInput.checked = true;
+        const langInput = document.querySelector(`input[name="lang"][value="${State.language}"]`);
+        if (langInput) langInput.checked = true;
+        const bgInput = document.querySelector(`input[name="bgT"][value="${State.bgConfig.type}"]`);
+        if (bgInput) bgInput.checked = true;
+        const historyToggle = $('toggleHistory');
+        if (historyToggle) historyToggle.checked = !!State.searchHistoryEnabled;
+    },
 
     renderCustomBg: function () {
         const wrap = $('customBgEditor');
@@ -2713,10 +2882,17 @@ const SettingsManager = {
             wrap.appendChild(row);
         });
     },
+    scheduleApplyStyles: function () {
+        if (this._styleRaf) return;
+        this._styleRaf = requestAnimationFrame(() => {
+            this._styleRaf = 0;
+            UIManager.applyStyles();
+        });
+    },
 
     updateStyle: function (key, val) {
         State.styles[key] = parseInt(val);
-        UIManager.applyStyles();
+        this.scheduleApplyStyles();
         const style = Config.STYLES.find((item) => item.id === key);
         const valueEl = document.querySelector(`[data-style-value="${key}"]`);
         if (style && valueEl) valueEl.textContent = formatStyleValue(style, State.styles[key]);
@@ -2727,7 +2903,7 @@ const SettingsManager = {
         if (!preset) return;
         State.styles = { ...State.styles, ...preset };
         UIManager.applyStyles();
-        this.render();
+        this.render(true);
     },
 
     setBgType: function (type) {
@@ -2738,8 +2914,7 @@ const SettingsManager = {
             area.innerHTML = `<input type="text" id="bgUrlInput" class="link-input" placeholder="URL" value="${State.bgConfig.type === 'url' ? State.bgConfig.value : ''}">`;
             $('bgUrlInput').oninput = e => {
                 State.tempBgValue = e.target.value;
-                setBgStatus(t('bgLoading'), 'loading');
-                $('bg-layer').src = e.target.value;
+                this._previewBgUrl(e.target.value);
             };
         } else if (type === 'local') {
             area.innerHTML = `<input type="file" id="bgFileInput" accept="image/*">`;
@@ -2822,7 +2997,7 @@ const SettingsManager = {
         if (lang) State.language = lang.value;
 
         // BG
-        const type = document.querySelector('input[name="bgT"]:checked').value;
+        const type = document.querySelector('input[name="bgT"]:checked')?.value || State.bgConfig.type;
         if (State.tempBgValue !== null) State.bgConfig = { type, value: State.tempBgValue };
         else if (getBgSourcesMap()[type]) State.bgConfig = { type, value: getBgSourcesMap()[type].url };
         else if (type === 'url') State.bgConfig = { type: 'url', value: $('bgUrlInput').value };
@@ -2840,11 +3015,28 @@ const SettingsManager = {
             };
         }).filter(s => s.name && s.url);
 
-        // Import
-        if (State.pendingImportData) { State.bookmarks = State.pendingImportData; UIManager.enterFolder(UIManager.getDefaultFolderId()); }
-
+        if (State.pendingImportData) {
+            State.bookmarks = applyBookmarkCustomIcons(State.pendingImportData, State.bookmarkCustomIcons);
+            State.pendingImportData = null;
+            State.currentFolderId = UIManager.getDefaultFolderId();
+        }
+        SearchIndex.rebuild();
         await Storage.saveNow();
-        location.reload();
+        applyLanguage();
+        UIManager.applyStyles();
+        UIManager.applySidebarWidth();
+        UIManager.applyBackground(false, { silent: true });
+        UIManager.updateSearchPlaceholder();
+        UIManager.updateSearchEngineUI();
+        UIManager.renderDock();
+        if (State.bookmarks.length) {
+            UIManager.enterFolder(State.currentFolderId === 'root' ? UIManager.getDefaultFolderId() : State.currentFolderId);
+        } else {
+            $('bookmarkGrid').innerHTML = `<div style="grid-column:1/-1;text-align:center;opacity:0.6;padding:60px;">${t('welcome')}</div>`;
+            $('breadcrumb').innerHTML = `<div class="breadcrumb-item">${t('home')}</div>`;
+        }
+        this._rendered = false;
+        SettingsManager.toggle(false);
     },
 
     parseImport: function (file) {
@@ -3061,7 +3253,7 @@ const DragManager = {
         }
 
         // 保存并重新渲染
-        Storage.saveNow();
+        Storage.savePartial({ quickLinks: State.quickLinks });
         UIManager.renderDock();
         this.handleDragEnd();
     },
@@ -3137,7 +3329,7 @@ const DragManager = {
 
         if (this.touchDragIndex >= 0) {
             this.moveDockItem(this.touchDragIndex, dropIndex);
-            Storage.saveNow();
+            Storage.savePartial({ quickLinks: State.quickLinks });
             UIManager.renderDock();
         }
 
@@ -3185,6 +3377,14 @@ function bindEvents() {
         searchBox.classList.add('engine-open');
         engineToggle.setAttribute('aria-expanded', 'true');
     };
+    let dockScaleRaf = 0;
+    window.addEventListener('resize', () => {
+        if (dockScaleRaf) return;
+        dockScaleRaf = requestAnimationFrame(() => {
+            dockScaleRaf = 0;
+            UIManager.applyDockScale();
+        });
+    });
     // Navigation + modal bookmark editing
     const bookmarkGrid = $('bookmarkGrid');
     bookmarkGrid.addEventListener('click', (e) => {
@@ -3399,7 +3599,11 @@ function bindEvents() {
             try {
                 const bookmarks = await fetchBookmarksFromChrome();
                 State.bookmarks = applyBookmarkCustomIcons(bookmarks || []);
-                Storage.save();
+                SearchIndex.rebuild();
+                Storage.savePartial({
+                    bookmarks: State.bookmarks,
+                    bookmarkCustomIcons: State.bookmarkCustomIcons
+                });
                 if ($('searchInput') && $('searchInput').value.startsWith('/')) {
                     $('searchInput').value = '';
                     SuggestionManager.clear();
@@ -3483,31 +3687,8 @@ function bindEvents() {
                 return;
             }
 
-            $('breadcrumb').innerHTML = `<div class="breadcrumb-item">🔍 "${q}"</div>`;
-            const res = [];
-            const qLower = q.toLowerCase();
-
-            const walk = nodes => nodes.forEach(n => {
-                if (n.type === 'link') {
-                    // Fuzzy Match Logic
-                    const matchResult = fuzzyMatchWithHighlight(n.title, q);
-                    if (matchResult.matched) {
-                        const titleLower = (n.title || '').toLowerCase();
-                        const starts = titleLower.startsWith(qLower) ? 0.6 : 0;
-                        const contains = titleLower.includes(qLower) ? 0.2 : 0;
-                        const score = matchResult.score + starts + contains;
-                        res.push({ ...n, highlightedTitle: matchResult.html, _score: score });
-                    } else if (n.url.toLowerCase().includes(qLower)) {
-                        // Fallback: URL match (no highlight on title)
-                        res.push({ ...n, _score: 0.15 });
-                    }
-                }
-                if (n.children) walk(n.children);
-            });
-
-            walk(State.bookmarks);
-            res.sort((a, b) => (b._score || 0) - (a._score || 0) || (a.title || '').localeCompare(b.title || ''));
-            UIManager.renderGrid(res, true);
+            $('breadcrumb').innerHTML = `<div class="breadcrumb-item">🔍 "${escapeHtml(q)}"</div>`;
+            UIManager.renderGrid(SearchIndex.search(q), true);
         }
         // Mode 2: Web Search Suggestions
         else if (val.trim().length > 0) {
@@ -3559,7 +3740,7 @@ function bindEvents() {
             if (!Config.ENGINES[key]) return;
             if (State.currentEngine !== key) {
                 State.currentEngine = key;
-                Storage.save();
+                Storage.savePartial({ currentEngine: State.currentEngine });
                 UIManager.updateSearchPlaceholder();
                 UIManager.updateSearchEngineUI();
                 if ($('settingsSidebar').classList.contains('open')) {
@@ -3760,7 +3941,7 @@ function bindEvents() {
     $('btnAddCustomBg').onclick = () => SettingsManager.addCustomBgRow();
     $('toggleHistory').onchange = (e) => {
         State.searchHistoryEnabled = !!e.target.checked;
-        Storage.save();
+        Storage.savePartial({ searchHistoryEnabled: State.searchHistoryEnabled });
         if (!State.searchHistoryEnabled) {
             SuggestionManager.clear();
         } else if ($('searchInput').value.trim() === '') {
@@ -3769,7 +3950,7 @@ function bindEvents() {
     };
     $('btnClearHistory').onclick = () => {
         State.searchHistory = [];
-        Storage.save();
+        Storage.savePartial({ searchHistory: State.searchHistory });
         if ($('searchInput').value.trim() === '' && !$('searchInput').matches(':focus')) {
             SuggestionManager.clear();
         } else if ($('searchInput').value.trim() === '') {
@@ -3800,7 +3981,7 @@ function bindEvents() {
             const width = parseInt(sidebarEl.style.width, 10);
             if (Number.isFinite(width) && width > 0) {
                 State.styles.sidebarWidth = width;
-                Storage.save();
+                Storage.savePartial({ styles: State.styles });
             }
             document.removeEventListener('mousemove', onMove);
             document.removeEventListener('mouseup', onUp);
@@ -3861,14 +4042,28 @@ function initNoiseOverlay() {
     }
 }
 
-window.onload = () => {
+const bootstrap = () => {
+    initNoiseOverlay();
+    applyLanguage();
+    UIManager.setupTime();
+    UIManager.applyStyles();
+    UIManager.applySidebarWidth();
+    UIManager.updateSearchPlaceholder();
+    UIManager.updateSearchEngineUI();
+    bindEvents();
+
     Storage.load().then(() => {
         applyLanguage();
         UIManager.init();
-        bindEvents();
-        if (!isExtensionContext() && 'serviceWorker' in navigator) {
-            navigator.serviceWorker.register('./sw.js').catch(() => { });
-        }
     });
-    initNoiseOverlay();
+
+    if (!isExtensionContext() && 'serviceWorker' in navigator) {
+        scheduleIdle(() => navigator.serviceWorker.register('./sw.js').catch(() => { }));
+    }
 };
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bootstrap, { once: true });
+} else {
+    bootstrap();
+}
