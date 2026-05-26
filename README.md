@@ -74,7 +74,3 @@ Chinese and English are supported. Strings are centralized in the `I18N` object 
 ## Contributing
 
 PRs are welcome. Please follow the project's zero-deps, no-build approach.
-
-## License
-
-MIT
