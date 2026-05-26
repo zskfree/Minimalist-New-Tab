@@ -11,7 +11,8 @@ A lightweight Chrome MV3 extension that replaces the new tab page. Glassmorphism
 ## Features
 
 - Glassmorphism UI — clean and responsive
-- Multiple wallpaper sources (Bing / Anime / Picsum / Custom / Local)
+- Theme presets with advanced appearance controls
+- Multiple wallpaper sources (Bing / Custom / Local)
 - Search suggestions (proxy-enabled in extension mode)
 - Smart favicon fallback + letter avatars
 - Dock drag & reorder (supports long-press on mobile)
@@ -41,11 +42,13 @@ A lightweight Chrome MV3 extension that replaces the new tab page. Glassmorphism
 
 - No-build workflow: edit source files and refresh the extension or page to see changes.
 
-- Adding wallpaper sources: update `Config.BG_SOURCES` (in `app.js`) and add required `host_permissions` in `manifest.json`.
+- Adding wallpaper sources: use Settings → Wallpaper → Custom Sources. Built-in non-Bing image providers are kept there so they can be edited or removed.
 
 - Custom search engines: edit `Config.ENGINES` in `app.js`.
 
 - Styling options: use `Config.STYLES` and `State.styles` to control size, spacing and blur.
+
+- Release checks: use [doc/QA_CHECKLIST.md](doc/QA_CHECKLIST.md) before shipping UI or behavior changes.
 
 ## Internationalization
 

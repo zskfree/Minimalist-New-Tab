@@ -15,10 +15,12 @@ const Config = {
         yandex: { name: "Yandex", url: "https://yandex.com/search/?text=", suggest: null }
     },
     BG_SOURCES: {
-        bing: { labelKey: "bg.bing", url: "https://bing.biturl.top/?resolution=1920&format=image&index=0&mkt=zh-CN" },
-        anime: { labelKey: "bg.anime", url: "https://api.btstu.cn/sjbz/api.php?lx=dongman&format=images", random: true, randomParam: "t" },
-        picsum: { labelKey: "bg.picsum", url: "https://picsum.photos/1920/1080", random: true, randomParam: "random" }
+        bing: { labelKey: "bg.bing", url: "https://bing.biturl.top/?resolution=1920&format=image&index=0&mkt=zh-CN" }
     },
+    DEFAULT_BG_SOURCES: [
+        { id: 'anime', name: '二次元', url: 'https://www.loliapi.com/acg/pc/', random: true },
+        { id: 'picsum', name: 'Picsum 随机', url: 'https://picsum.photos/1920/1080', random: true }
+    ],
     DEFAULT_LINKS: [
         { title: "Google", url: "https://www.google.com", icon: "assets/google.png" },
         { title: "YouTube", url: "https://www.youtube.com", icon: "assets/youtube.png" },
@@ -50,9 +52,10 @@ const Config = {
         { id: 'color', titleKey: 'appearance.color' }
     ],
     STYLE_PRESETS: {
-        balanced: { iconSize: 56, innerScale: 78, fontSize: 13, gridGap: 20, sidebarWidth: 820, bookmarkHoverLift: 4, bookmarkHoverScale: 106, glassBlur: 18, glassRadius: 18, cardRadius: 15, bgBlur: 2, bgOverlay: 28, accentHue: 210, accentSaturation: 92, accentLightness: 56 },
-        compact: { iconSize: 48, innerScale: 84, fontSize: 12, gridGap: 16, sidebarWidth: 700, bookmarkHoverLift: 3, bookmarkHoverScale: 104, glassBlur: 12, glassRadius: 14, cardRadius: 12, bgBlur: 1, bgOverlay: 24, accentHue: 212, accentSaturation: 88, accentLightness: 54 },
-        immersive: { iconSize: 60, innerScale: 76, fontSize: 14, gridGap: 24, sidebarWidth: 900, bookmarkHoverLift: 5, bookmarkHoverScale: 108, glassBlur: 22, glassRadius: 20, cardRadius: 17, bgBlur: 4, bgOverlay: 32, accentHue: 204, accentSaturation: 86, accentLightness: 58 }
+        focus: { iconSize: 56, innerScale: 78, fontSize: 13, gridGap: 20, sidebarWidth: 820, bookmarkHoverLift: 4, bookmarkHoverScale: 106, glassBlur: 14, glassRadius: 16, cardRadius: 14, bgBlur: 1, bgOverlay: 34, accentHue: 210, accentSaturation: 88, accentLightness: 54 },
+        glass: { iconSize: 58, innerScale: 76, fontSize: 13, gridGap: 22, sidebarWidth: 860, bookmarkHoverLift: 5, bookmarkHoverScale: 108, glassBlur: 22, glassRadius: 20, cardRadius: 17, bgBlur: 3, bgOverlay: 30, accentHue: 204, accentSaturation: 86, accentLightness: 58 },
+        dense: { iconSize: 48, innerScale: 84, fontSize: 12, gridGap: 16, sidebarWidth: 740, bookmarkHoverLift: 3, bookmarkHoverScale: 104, glassBlur: 12, glassRadius: 14, cardRadius: 12, bgBlur: 1, bgOverlay: 28, accentHue: 212, accentSaturation: 88, accentLightness: 54 },
+        immersive: { iconSize: 62, innerScale: 74, fontSize: 14, gridGap: 24, sidebarWidth: 920, bookmarkHoverLift: 5, bookmarkHoverScale: 108, glassBlur: 24, glassRadius: 21, cardRadius: 18, bgBlur: 4, bgOverlay: 38, accentHue: 198, accentSaturation: 82, accentLightness: 60 }
     }
 };
 
@@ -73,6 +76,11 @@ const I18N = {
         btnAddCustomBg: '+ 添加自定义来源',
         btnExportConfig: '导出配置文件',
         exportHint: '导出书签、样式、壁纸与搜索引擎配置',
+        settingsSectionExperience: '体验',
+        settingsSectionPersonal: '个性化',
+        settingsSectionData: '数据',
+        settingsSectionDanger: '危险操作',
+        labelAdvancedAppearance: '高级外观',
         btnReset: '⚠️ 重置所有数据',
         btnCancel: '取消',
         btnSave: '保存配置',
@@ -130,9 +138,7 @@ const I18N = {
             fontSize: '字体'
         },
         bg: {
-            bing: 'Bing 每日',
-            anime: '二次元',
-            picsum: 'Picsum 随机'
+            bing: 'Bing 每日'
         }
     },
     en: {
@@ -151,6 +157,11 @@ const I18N = {
         btnAddCustomBg: '+ Add Custom Source',
         btnExportConfig: 'Export Config File',
         exportHint: 'Export bookmarks, styles, wallpaper and search engine settings',
+        settingsSectionExperience: 'Experience',
+        settingsSectionPersonal: 'Personalization',
+        settingsSectionData: 'Data',
+        settingsSectionDanger: 'Danger zone',
+        labelAdvancedAppearance: 'Advanced appearance',
         btnReset: '⚠️ Reset All Data',
         btnCancel: 'Cancel',
         btnSave: 'Save',
@@ -207,9 +218,7 @@ const I18N = {
             fontSize: 'Font'
         },
         bg: {
-            bing: 'Bing Daily',
-            anime: 'Anime',
-            picsum: 'Picsum Random'
+            bing: 'Bing Daily'
         }
     }
 };
@@ -257,9 +266,10 @@ Object.assign(I18N.zh, {
         glass: '\u73bb\u7483\u8d28\u611f',
         background: '\u80cc\u666f',
         color: '\u914d\u8272',
-        presets: '\u5feb\u901f\u9884\u8bbe',
-        presetBalanced: '\u5747\u8861',
-        presetCompact: '\u7d27\u51d1',
+        presets: '\u4e3b\u9898\u9884\u8bbe',
+        presetFocus: 'Focus',
+        presetGlass: 'Glass',
+        presetDense: 'Dense',
         presetImmersive: '\u6c89\u6d78'
     },
     style: {
@@ -316,9 +326,10 @@ Object.assign(I18N.en, {
         glass: 'Glass',
         background: 'Background',
         color: 'Color',
-        presets: 'Quick Presets',
-        presetBalanced: 'Balanced',
-        presetCompact: 'Compact',
+        presets: 'Theme presets',
+        presetFocus: 'Focus',
+        presetGlass: 'Glass',
+        presetDense: 'Dense',
         presetImmersive: 'Immersive'
     },
     style: {
@@ -390,6 +401,7 @@ const State = {
     language: 'zh',
     customBgSources: [{ id: 'zhimg-pica', name: 'Zhimg Pica', url: 'https://pica.zhimg.com/v2-564f2c587f65e208a130242b34338872_1440w.jpg', random: false }],
     bookmarkCustomIcons: {},
+    tempBgType: null,
     tempBgValue: null,
     pendingImportData: null,
     isSearchMode: false,
@@ -594,7 +606,10 @@ const getFaviconProviders = () => {
 };
 const getFaviconCandidates = (domain, customIcon) => {
     const candidates = [];
-    if (customIcon) candidates.push(customIcon);
+    const pushCandidate = (url) => {
+        if (url && !candidates.includes(url)) candidates.push(url);
+    };
+    if (customIcon) pushCandidate(customIcon);
     if (!domain) return candidates;
     if (domain === 'chatgpt.com' || domain.endsWith('.chatgpt.com') || domain === 'openai.com' || domain.endsWith('.openai.com')) {
         const special = [
@@ -605,16 +620,28 @@ const getFaviconCandidates = (domain, customIcon) => {
             'https://www.google.com/s2/favicons?domain=openai.com&sz=128'
         ];
         special.forEach((url) => {
-            if (!shouldSkipFavicon(domain, url)) candidates.push(url);
+            if (!shouldSkipFavicon(domain, url)) pushCandidate(url);
         });
     }
     const cache = getFaviconCache();
-    if (cache[domain] && !shouldSkipFavicon(domain, cache[domain])) candidates.push(cache[domain]);
+    if (cache[domain] && !shouldSkipFavicon(domain, cache[domain])) pushCandidate(cache[domain]);
     getFaviconProviders().forEach((p) => {
         const url = p.build(domain);
-        if (url && !shouldSkipFavicon(domain, url)) candidates.push(url);
+        if (url && !shouldSkipFavicon(domain, url)) pushCandidate(url);
     });
     return candidates;
+};
+const getAvatarSeed = (text) => {
+    let hash = 0;
+    const value = String(text || '');
+    for (let i = 0; i < value.length; i++) hash = value.charCodeAt(i) + ((hash << 5) - hash);
+    return ((hash % 360) + 360) % 360;
+};
+const getAvatarLetter = (title, url = '') => {
+    const first = String(title || '').trim().match(/[A-Za-z0-9\u4e00-\u9fff]/u)?.[0];
+    if (first) return first.toUpperCase();
+    const domain = getDomain(url).replace(/^www\./, '');
+    return (domain.match(/[A-Za-z0-9]/)?.[0] || 'A').toUpperCase();
 };
 const escapeHtml = (str) => String(str)
     .replace(/&/g, '&amp;')
@@ -651,6 +678,51 @@ const applyBookmarkCustomIcons = (nodes, iconMap = State.bookmarkCustomIcons || 
     if (next.children) next.children = applyBookmarkCustomIcons(next.children, iconMap);
     return next;
 });
+
+const normalizeCustomBgSources = (sources = [], opts = {}) => {
+    const hasUserSources = Array.isArray(sources) && sources.length > 0;
+    const includeDefaults = opts.includeDefaults === true || (!hasUserSources && opts.includeDefaults !== false);
+    const byId = new Map();
+    const add = (src) => {
+        if (!src || !src.id) return;
+        const url = String(src.url || '').trim();
+        const name = String(src.name || src.id).trim();
+        if (!url || !name) return;
+        byId.set(String(src.id), {
+            id: String(src.id),
+            name,
+            url,
+            random: !!src.random
+        });
+    };
+    if (includeDefaults) Config.DEFAULT_BG_SOURCES.forEach(add);
+    if (opts.ensureIds) {
+        Config.DEFAULT_BG_SOURCES
+            .filter((src) => opts.ensureIds.includes(src.id))
+            .forEach(add);
+    }
+    (sources || []).forEach(add);
+    return Array.from(byId.values());
+};
+
+const getLegacyBgSourceIds = (bgConfig = {}) => {
+    const ids = [];
+    if (bgConfig?.type === 'anime') ids.push('anime');
+    if (bgConfig?.type === 'picsum') ids.push('picsum');
+    return ids;
+};
+
+const normalizeBgConfig = (bgConfig = State.bgConfig) => {
+    const next = { ...(bgConfig || {}) };
+    if (next.type === 'anime') {
+        next.type = 'custom_anime';
+        next.value = Config.DEFAULT_BG_SOURCES.find((src) => src.id === 'anime')?.url || next.value;
+    } else if (next.type === 'picsum') {
+        next.type = 'custom_picsum';
+        next.value = Config.DEFAULT_BG_SOURCES.find((src) => src.id === 'picsum')?.url || next.value;
+    }
+    return next;
+};
 
 const collectBookmarkIds = (node, acc = []) => {
     if (!node) return acc;
@@ -1440,7 +1512,7 @@ const BookmarkEditor = {
         const href = safeUrl || '#';
         const disabled = safeUrl ? '' : ' aria-disabled="true" tabindex="-1"';
         const draggable = this.isEnabled() ? '' : ' draggable="true"';
-        return `<a href="${href}" class="card${this.isEnabled() ? ' is-edit-mode' : ''}" target="_blank" rel="noopener"${draggable} data-bookmark-id="${node.id}" data-bookmark-type="link" role="listitem" aria-label="${escTitle}"${disabled}>${cue}<div class="ios-icon"><img class="card-icon" data-src="${iconUrl}" data-step="0" data-candidates="${candidatesAttr}" loading="lazy" decoding="async" data-url="${safeUrl}" data-title="${escTitle}"></div><div class="card-title">${displayTitle}</div></a>`;
+        return `<a href="${href}" class="card${this.isEnabled() ? ' is-edit-mode' : ''}" target="_blank" rel="noopener"${draggable} data-bookmark-id="${node.id}" data-bookmark-type="link" role="listitem" aria-label="${escTitle}"${disabled}>${cue}<div class="ios-icon site-icon-shell"><img class="card-icon" data-src="${iconUrl}" data-step="0" data-candidates="${candidatesAttr}" loading="lazy" decoding="async" data-url="${safeUrl}" data-title="${escTitle}" alt="" aria-hidden="true"></div><div class="card-title">${displayTitle}</div></a>`;
     }
 };
 
@@ -1490,6 +1562,34 @@ const showBgToast = (text, type = '') => {
             if (span) span.textContent = t('btnRefreshBg');
         }, 1400);
     }
+};
+
+const previewBackgroundUrl = (url, opts = {}) => {
+    const normalized = opts.raw ? url : normalizeUrl(url || '');
+    if (!normalized) {
+        setBgStatus('');
+        return;
+    }
+    const img = $('bg-layer');
+    if (!img) return;
+    const successText = opts.successText || t('bgUpdated');
+    setBgStatus(t('bgLoading'), 'loading');
+    showBgToast(t('bgLoading'));
+    img.style.opacity = '0';
+    img.onload = () => {
+        setLastGoodBg(img.src);
+        img.style.opacity = '1';
+        setBgStatus(successText, 'success');
+        showBgToast(successText, 'success');
+        setTimeout(() => setBgStatus(''), 1200);
+    };
+    img.onerror = () => {
+        setBgStatus(t('bgFailed'), 'error');
+        showBgToast(t('bgFailed'), 'error');
+        const last = getLastGoodBg();
+        if (last && img.src !== last) img.src = last;
+    };
+    img.src = normalized;
 };
 
 let actionToastTimer = 0;
@@ -1575,6 +1675,10 @@ const applyLanguage = () => {
         labelImportBookmarks: 'labelImportBookmarks',
         labelExportConfig: 'labelExportConfig',
         labelImportConfig: 'labelImportConfig',
+        settingsSectionExperience: 'settingsSectionExperience',
+        settingsSectionPersonal: 'settingsSectionPersonal',
+        settingsSectionData: 'settingsSectionData',
+        settingsSectionDanger: 'settingsSectionDanger',
         btnAddLinkRow: 'btnAddLinkRow',
         btnAddCustomBg: 'btnAddCustomBg',
         labelHistoryToggle: 'historyToggle',
@@ -1903,8 +2007,8 @@ const UIManager = {
             return `
         <a href="${href}" class="dock-item${editing ? ' is-edit-mode' : ''}" target="_blank" rel="noopener" draggable="${editing ? 'false' : 'true'}" data-index="${index}" data-url="${safeUrl}" data-title="${safeTitle}" role="listitem" aria-label="${safeTitle}"${disabled}>
             ${cue}
-            <div class="ios-icon">
-                <img class="dock-icon" data-src="${iconUrl}" data-step="0" data-candidates="${candidatesAttr}" decoding="async" data-url="${safeUrl}" data-title="${safeTitle}">
+            <div class="ios-icon site-icon-shell">
+                <img class="dock-icon" data-src="${iconUrl}" data-step="0" data-candidates="${candidatesAttr}" decoding="async" data-url="${safeUrl}" data-title="${safeTitle}" alt="" aria-hidden="true">
             </div>
         </a>`;
         }).join('') + (editing ? BookmarkEditor.renderDockCreateItem() : '');
@@ -2102,13 +2206,17 @@ const UIManager = {
     },
 
     generateAvatar: function (parent, title) {
+        if (!parent) return;
         if (parent.querySelector('.letter-avatar')) return;
+        const img = parent.querySelector('img');
+        const url = img?.dataset.url || '';
+        const source = title || url || 'A';
+        const hue = getAvatarSeed(source);
         const div = document.createElement('div');
         div.className = 'letter-avatar';
-        div.textContent = (title || "A").trim().charAt(0).toUpperCase();
-        let hash = 0;
-        for (let i = 0; i < (title || "").length; i++) hash = (title || "").charCodeAt(i) + ((hash << 5) - hash);
-        div.style.background = `linear-gradient(135deg, hsl(${hash % 360},70%,60%), hsl(${(hash + 40) % 360},70%,50%))`;
+        div.textContent = getAvatarLetter(title, url);
+        div.style.background = `linear-gradient(135deg, hsl(${hue} 66% 58%), hsl(${(hue + 42) % 360} 68% 46%))`;
+        parent.classList.add('has-fallback-avatar');
         parent.appendChild(div);
         // Trigger reflow to ensure transition plays
         void div.offsetWidth;
@@ -2392,10 +2500,13 @@ const Storage = {
             State.bookmarks = applyBookmarkCustomIcons(get('my_bookmarks') || [], State.bookmarkCustomIcons);
             State.quickLinks = get('my_quicklinks') || cloneDefaultLinks();
             State.styles = { ...State.styles, ...(get('my_style_config') || {}) };
-            State.bgConfig = get('my_bg_config') || State.bgConfig;
+            const loadedBgConfig = get('my_bg_config') || State.bgConfig;
+            State.bgConfig = normalizeBgConfig(loadedBgConfig);
             State.currentEngine = data?.my_search_engine || 'google';
             State.language = data?.my_lang || 'zh';
-            State.customBgSources = get('my_custom_bg_sources') || [];
+            State.customBgSources = normalizeCustomBgSources(get('my_custom_bg_sources') || [], {
+                ensureIds: getLegacyBgSourceIds(loadedBgConfig)
+            });
             State.searchHistory = get('my_search_history') || [];
             State.searchHistoryEnabled = data?.my_search_history_enabled !== false && data?.my_search_history_enabled !== 'false';
         };
@@ -2426,10 +2537,12 @@ const Storage = {
                     my_bookmarks: initData.bookmarks || [],
                     my_quicklinks: initData.quickLinks || [],
                     my_style_config: initData.styles || {},
-                    my_bg_config: initData.bgConfig || {},
+                    my_bg_config: normalizeBgConfig(initData.bgConfig || {}),
                     my_search_engine: initData.currentEngine || initData.searchEngine || 'google',
                     my_lang: initData.language || 'zh',
-                    my_custom_bg_sources: initData.customBgSources || [],
+                    my_custom_bg_sources: normalizeCustomBgSources(initData.customBgSources || [], {
+                        ensureIds: getLegacyBgSourceIds(initData.bgConfig || {})
+                    }),
                     my_bookmark_icon_map: initData.bookmarkCustomIcons || {},
                     my_search_history: initData.searchHistory || [],
                     my_search_history_enabled: initData.searchHistoryEnabled !== false && initData.searchHistoryEnabled !== 'false'
@@ -2625,10 +2738,13 @@ const Storage = {
                 State.bookmarks = applyBookmarkCustomIcons(data.bookmarks || [], State.bookmarkCustomIcons);
                 State.quickLinks = data.quickLinks || cloneDefaultLinks();
                 State.styles = { ...State.styles, ...(data.styles || {}) };
-                State.bgConfig = data.bgConfig || State.bgConfig;
+                const importedBgConfig = data.bgConfig || State.bgConfig;
+                State.bgConfig = normalizeBgConfig(importedBgConfig);
                 State.currentEngine = data.currentEngine || 'google';
                 State.language = data.language || State.language;
-                State.customBgSources = data.customBgSources || State.customBgSources;
+                State.customBgSources = normalizeCustomBgSources(data.customBgSources || State.customBgSources, {
+                    ensureIds: getLegacyBgSourceIds(importedBgConfig)
+                });
                 SearchIndex.rebuild();
                 this.saveNow();
 
@@ -2668,8 +2784,11 @@ const Storage = {
 /** Module: Global Icon Handlers */
 window.checkIcon = function (img, url, title) {
     if (img.dataset.state === "failed") return;
-    const w = img.naturalWidth, s = parseInt(img.dataset.step || "0");
-    if (w === 0 || (s === 0 && w < 32) || (s === 1 && w < 16)) {
+    const w = img.naturalWidth;
+    const h = img.naturalHeight;
+    const s = parseInt(img.dataset.step || "0");
+    const minSide = Math.min(w || 0, h || 0);
+    if (minSide === 0 || (s === 0 && minSide < 32) || (s === 1 && minSide < 16)) {
         window.handleIconError(img, url, title);
         return;
     }
@@ -2719,8 +2838,7 @@ const SettingsManager = {
             setBgStatus('');
             return;
         }
-        setBgStatus(t('bgLoading'), 'loading');
-        $('bg-layer').src = normalized;
+        previewBackgroundUrl(normalized, { raw: true });
     }, 450),
     toggle: function (open) {
         const sidebar = $('settingsSidebar');
@@ -2783,7 +2901,10 @@ const SettingsManager = {
                 <div class="appearance-section-title">${t('appearance.presets')}</div>
                 <div class="appearance-preset-grid">${presetButtons}</div>
             </div>
-            ${groupedControls}
+            <details class="appearance-advanced">
+                <summary>${t('labelAdvancedAppearance')}</summary>
+                <div class="appearance-advanced-body">${groupedControls}</div>
+            </details>
         `;
 
         // Language
@@ -2908,6 +3029,7 @@ const SettingsManager = {
 
     setBgType: function (type) {
         const area = $('bgInputArea');
+        State.tempBgType = type;
         State.tempBgValue = null;
         const sourcesMap = getBgSourcesMap();
         if (type === 'url') {
@@ -2924,26 +3046,23 @@ const SettingsManager = {
                     const r = new FileReader();
                     r.onload = ev => {
                         State.tempBgValue = ev.target.result;
-                        setBgStatus(t('bgLoading'), 'loading');
-                        $('bg-layer').src = ev.target.result;
+                        previewBackgroundUrl(ev.target.result, { raw: true });
                     };
                     r.readAsDataURL(f);
                 } else showActionToast(t('imageTooLarge'), 'error');
             };
         } else if (sourcesMap[type]) {
             area.innerHTML = '';
-            State.tempBgValue = sourcesMap[type].url;
-            if (sourcesMap[type].random) {
-                setBgStatus('');
-            } else {
-                setBgStatus(t('bgLoading'), 'loading');
-                $('bg-layer').src = sourcesMap[type].url;
-            }
+            State.tempBgValue = sourcesMap[type].random ? resolveBgUrl(type, true) : sourcesMap[type].url;
+            previewBackgroundUrl(State.tempBgValue, {
+                raw: /^data:image\//i.test(State.tempBgValue),
+                successText: sourcesMap[type].random ? t('bgRandomSelected') : t('bgUpdated')
+            });
         } else {
             area.innerHTML = '';
+            State.tempBgType = 'bing';
             State.tempBgValue = Config.BING_API;
-            setBgStatus(t('bgLoading'), 'loading');
-            $('bg-layer').src = Config.BING_API;
+            previewBackgroundUrl(Config.BING_API, { raw: true });
         }
     },
 
@@ -2997,7 +3116,7 @@ const SettingsManager = {
         if (lang) State.language = lang.value;
 
         // BG
-        const type = document.querySelector('input[name="bgT"]:checked')?.value || State.bgConfig.type;
+        const type = State.tempBgType || document.querySelector('input[name="bgT"]:checked')?.value || State.bgConfig.type;
         if (State.tempBgValue !== null) State.bgConfig = { type, value: State.tempBgValue };
         else if (getBgSourcesMap()[type]) State.bgConfig = { type, value: getBgSourcesMap()[type].url };
         else if (type === 'url') State.bgConfig = { type: 'url', value: $('bgUrlInput').value };
@@ -3036,6 +3155,8 @@ const SettingsManager = {
             $('breadcrumb').innerHTML = `<div class="breadcrumb-item">${t('home')}</div>`;
         }
         this._rendered = false;
+        State.tempBgType = null;
+        State.tempBgValue = null;
         SettingsManager.toggle(false);
     },
 
@@ -3881,26 +4002,26 @@ function bindEvents() {
             if (useBtn) {
                 const id = useBtn.dataset.id;
                 const type = `custom_${id}`;
+                const row = useBtn.closest('.custom-bg-row');
+                const inputs = row ? row.querySelectorAll('input[type="text"]') : null;
+                const currentUrl = inputs && inputs[1] ? inputs[1].value.trim() : '';
+                const currentRandom = !!row?.querySelector('input[type="checkbox"]')?.checked;
                 const radio = document.querySelector(`input[name="bgT"][value="${type}"]`);
                 if (radio) {
                     radio.checked = true;
-                    // trigger change handler
-                    radio.dispatchEvent(new Event('change', { bubbles: true }));
-                    SettingsManager.setBgType(type);
-                    // ensure the preview is visible immediately
-                } else {
-                    // Fallback: try to preview the URL directly from saved state or the editor row (unsaved)
-                    let url = State.customBgSources.find(s => s.id === id)?.url;
-                    if (!url) {
-                        const row = useBtn.closest('.custom-bg-row');
-                        const inputs = row ? row.querySelectorAll('input[type="text"]') : null;
-                        url = inputs && inputs[1] ? inputs[1].value.trim() : url || '';
-                    }
-                    State.tempBgValue = url || '';
-                    if (State.tempBgValue) {
-                        setBgStatus(t('bgLoading'), 'loading');
-                        $('bg-layer').src = State.tempBgValue;
-                    }
+                }
+                const savedUrl = State.customBgSources.find(s => s.id === id)?.url || '';
+                const url = currentUrl || savedUrl;
+                if (!url) {
+                    setBgStatus(t('bgFailed'), 'error');
+                    return;
+                }
+                State.tempBgType = type;
+                State.tempBgValue = currentRandom ? withCacheBuster(url, 't') : url;
+                if (State.tempBgValue) {
+                    previewBackgroundUrl(State.tempBgValue, {
+                        successText: currentRandom ? t('bgRandomSelected') : t('bgUpdated')
+                    });
                 }
                 return;
             }

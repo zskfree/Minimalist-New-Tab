@@ -42,7 +42,7 @@
 ## 开发与定制
 
 - 无构建：编辑源文件后刷新或重新加载扩展即可生效。
-- 增加壁纸来源：编辑 `Config.BG_SOURCES`（`app.js`）并在 `manifest.json` 添加所需 `host_permissions`。
+- 增加壁纸来源：在设置 → 壁纸来源 → 自定义来源中添加。除 Bing 每日和本地图片外，其他在线来源默认都作为可编辑、可删除的自定义来源管理。
 - 自定义搜索引擎：编辑 `Config.ENGINES`。
 - 样式配置：使用 `Config.STYLES` 与 `State.styles` 调整尺寸、间距与模糊效果。
 
